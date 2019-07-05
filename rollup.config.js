@@ -4,6 +4,7 @@ const { sizeSnapshot } = require("rollup-plugin-size-snapshot");
 const { uglify } = require("rollup-plugin-uglify");
 const path = require("path");
 const pkg = require("./package.json");
+const localResolve =require('rollup-plugin-local-resolve') ;
 
 function isBareModuleId(id) {
   return (
@@ -17,6 +18,7 @@ const cjs = [
     output: { file: `cjs/${pkg.name}.js`, format: "cjs", esModule: false },
     external: isBareModuleId,
     plugins: [
+      localResolve(),
       babel({ exclude: /node_modules/ }),
       replace({ "process.env.NODE_ENV": JSON.stringify("development") })
     ]
@@ -26,6 +28,7 @@ const cjs = [
     output: { file: `cjs/${pkg.name}.min.js`, format: "cjs" },
     external: isBareModuleId,
     plugins: [
+      localResolve(),
       babel({ exclude: /node_modules/ }),
       replace({ "process.env.NODE_ENV": JSON.stringify("production") }),
       uglify()
@@ -39,6 +42,7 @@ const esm = [
     output: { file: `esm/${pkg.name}.js`, format: "esm" },
     external: isBareModuleId,
     plugins: [
+      localResolve(),
       babel({
         exclude: /node_modules/,
         runtimeHelpers: true,

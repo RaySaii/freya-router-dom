@@ -1,6 +1,6 @@
 import React from "react";
-import { Router } from "react-router";
-import { createBrowserHistory as createHistory } from "history";
+import { Router } from "./router";
+import { createBrowserHistory as createHistory } from './history';
 import PropTypes from "prop-types";
 import warning from "tiny-warning";
 

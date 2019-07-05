@@ -1,15 +1,15 @@
 {
   "esm/react-router-dom.js": {
-    "bundled": 8793,
-    "minified": 5220,
-    "gzipped": 1681,
+    "bundled": 72086,
+    "minified": 36909,
+    "gzipped": 9382,
     "treeshaked": {
       "rollup": {
-        "code": 379,
-        "import_statements": 355
+        "code": 15995,
+        "import_statements": 447
       },
       "webpack": {
-        "code": 1612
+        "code": 17547
       }
     }
   },
@@ -22,5 +22,19 @@
     "bundled": 38092,
     "minified": 12686,
     "gzipped": 4731
+  },
+  "esm/freya-router-dom.js": {
+    "bundled": 72086,
+    "minified": 36909,
+    "gzipped": 9382,
+    "treeshaked": {
+      "rollup": {
+        "code": 15995,
+        "import_statements": 447
+      },
+      "webpack": {
+        "code": 17547
+      }
+    }
   }
 }

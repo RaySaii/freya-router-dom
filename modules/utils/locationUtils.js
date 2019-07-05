@@ -1,4 +1,4 @@
-import { createLocation } from "history";
+import { createLocation } from "../history";
 
 export const resolveToLocation = (to, currentLocation) =>
   typeof to === "function" ? to(currentLocation) : to;
