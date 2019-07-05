@@ -63,7 +63,7 @@ switch (process.env.BUILD_ENV) {
     config = esm;
     break;
   default :
-    config=esm
+    config=cjs.concat(esm)
 }
 
 module.exports = config;
