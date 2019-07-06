@@ -1,4 +1,5 @@
 export * from './router'
+export * from './history'
 
 export {default as BrowserRouter} from './BrowserRouter'
 export {default as HashRouter} from './HashRouter'
