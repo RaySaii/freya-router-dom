@@ -28,6 +28,7 @@
   "module": "esm/freya-router-dom.js",
   "sideEffects": false,
   "scripts": {
+    "dev": "rollup -w -c",
     "build": "rollup -c",
     "lint": "eslint modules",
     "prepublishOnly": "npm run build",

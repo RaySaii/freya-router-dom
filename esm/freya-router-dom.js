@@ -235,7 +235,7 @@ function getHistoryState() {
   }
 }
 
-console.log("======== freya-history =========");
+console.log('======== freya-history =========');
 /**
  * Creates a history object that uses the HTML5 history API including
  * pushState, replaceState, and the popstate event.
@@ -250,6 +250,7 @@ function createBrowserHistory(props) {
   var globalHistory = window.history;
   var canUseHistory = supportsHistory();
   var needsHashChangeListener = !supportsPopStateOnHashChange();
+  var goNum = null;
   var _props = props,
       _props$forceRefresh = _props.forceRefresh,
       forceRefresh = _props$forceRefresh === void 0 ? false : _props$forceRefresh,
@@ -283,8 +284,16 @@ function createBrowserHistory(props) {
   function setState(nextState) {
     if (nextState && nextState.action == 'PUSH') {
       window.globalManger.push(nextState.location);
-    } else {
+    } else if (nextState.action == 'REPLACE') {
       window.globalManger.pop();
+      window.globalManger.push(nextState.location);
+    } else if (nextState.action == 'POP') {
+      if (goNum) {
+        window.globalManger = window.globalManger.slice(0, goNum);
+        goNum = null;
+      } else {
+        window.globalManger.pop();
+      }
     }
 
     Object.assign(history, nextState);
@@ -417,6 +426,7 @@ function createBrowserHistory(props) {
   }
 
   function go(n) {
+    goNum = n;
     globalHistory.go(n);
   }
 
@@ -1583,6 +1593,7 @@ function (_React$Component2) {
     _this2.currentPage = null;
     _this2.matchPage = null;
     _this2.action = '';
+    _this2.canAnimate = true;
     _this2.SCREEN_WIDTH = window.innerWidth;
     _this2.MATCH_SCREEN_OFFSET = _this2.SCREEN_WIDTH;
     _this2.BOTTOM_SCREEN_OFFSET = -_this2.SCREEN_WIDTH * 0.3;
@@ -1697,29 +1708,30 @@ function (_React$Component2) {
       });
     };
 
-    _this2.findMatchElement = function (context$$1) {
+    _this2.findMatchElement = function (location) {
       // We use React.Children.forEach instead of React.Children.toArray().find()
       // here because toArray adds keys to all child elements and we do not want
       // to trigger an unmount/remount for two <Route>s that render the same
       // component at different URLs.
       var element, match;
-      var location = _this2.props.location || context$$1.location;
-      _this2.action = context$$1.history.action;
-      _this2.currentPage = _this2.matchPage;
+      location = location || _this2.props.location || _this2.props.adapt.location;
       React.Children.forEach(_this2.props.children, function (child) {
         if (match == null && React.isValidElement(child)) {
           element = child;
           var path = child.props.path || child.props.from;
           match = path ? matchPath(location.pathname, _extends({}, child.props, {
             path: path
-          })) : context$$1.match;
+          })) : _this2.props.adapt.match;
         }
       });
-      _this2.matchPage = React.cloneElement(element, {
+      return match ? React.cloneElement(element, {
         location: location,
         computedMatch: match
-      });
-      return match;
+      }) : null;
+    };
+
+    _this2.findMatchElementByLocation = function (location) {
+      return _this2.findMatchElement(location);
     };
 
     _this2.setTransform = function (translate) {
@@ -1831,28 +1843,11 @@ function (_React$Component2) {
     };
 
     _this2.renderGesture = function () {
-      if (window.globalManger.length < 2) {
-        _this2.toggleBodyTouch(true);
-
+      if (_this2.single) {
         return _this2.matchPage;
       }
 
-      _this2.toggleBodyTouch(false);
-
-      var match, element;
-      React.Children.forEach(_this2.props.children, function (child) {
-        if (match == null && React.isValidElement(child)) {
-          element = child;
-          var path = child.props.path || child.props.from;
-          match = matchPath(window.globalManger[window.globalManger.length - 2].pathname, _extends({}, child.props, {
-            path: path
-          }));
-        }
-      });
-      _this2.currentPage = React.cloneElement(element, {
-        location: window.globalManger[window.globalManger.length - 2],
-        computedMatch: match
-      });
+      _this2.currentPage = _this2.findMatchElementByLocation(window.globalManger[window.globalManger.length - 2]);
       return React.createElement(React.Fragment, null, React.createElement("div", {
         style: _extends({
           transform: "translate3d(" + _this2.BOTTOM_SCREEN_OFFSET + "px,0px,0)"
@@ -1882,14 +1877,17 @@ function (_React$Component2) {
         return _this2.renderGesture();
       }
 
-      var single = window.globalManger.length == 1;
+      if (_this2.currentPage.props.path == _this2.matchPage.props.path) {
+        _this2.props.adapt.history.goBack();
 
-      _this2.toggleBodyTouch(single);
+        _this2.canAnimate = false;
+        return _this2.matchPage;
+      }
 
       return React.createElement(React.Fragment, null, React.createElement("div", {
-        onTouchStart: single ? null : _this2.onTouchStart,
-        onTouchMove: single ? null : _this2.onTouchMove,
-        onTouchEnd: single ? null : _this2.onTouchEnd,
+        onTouchStart: _this2.single ? null : _this2.onTouchStart,
+        onTouchMove: _this2.single ? null : _this2.onTouchMove,
+        onTouchEnd: _this2.single ? null : _this2.onTouchEnd,
         style: _extends({
           transform: "translate3d(" + _this2.BOTTOM_SCREEN_OFFSET + "px,0px,0)"
         }, _this2.SIZE, pop_match),
@@ -1909,10 +1907,6 @@ function (_React$Component2) {
     };
 
     _this2.renderPush = function () {
-      var single = window.globalManger.length == 1;
-
-      _this2.toggleBodyTouch(single);
-
       return React.createElement(React.Fragment, null, React.createElement("div", {
         style: _extends({
           transform: "translate3d(0px,0px,0)"
@@ -1935,29 +1929,33 @@ function (_React$Component2) {
       }, _this2.matchPage));
     };
 
+    _this2.preRender = function () {
+      _this2.action = _this2.props.adapt.history.action;
+      _this2.single = window.globalManger.length == 1;
+
+      _this2.toggleBodyTouch(_this2.single);
+
+      _this2.currentPage = _this2.matchPage;
+      _this2.matchPage = _this2.findMatchElement();
+    };
+
     return _this2;
   }
 
   var _proto2 = AnimateRoute.prototype;
 
-  _proto2.componentWillMount = function componentWillMount() {
-    this.match = this.findMatchElement(this.props.adapt);
-  };
-
-  _proto2.componentWillReceiveProps = function componentWillReceiveProps(nextProps, nextContext) {
-    this.match = this.findMatchElement(nextProps.adapt);
-  };
-
   _proto2.componentDidUpdate = function componentDidUpdate(prevProps, prevState, snapshot) {
-    if (this.currentPage !== this.matchPage && !this.fromGesture) {
-      this.action == 'PUSH' ? this.animatePush() : this.animatePop();
+    if (this.canAnimate && !this.fromGesture) {
+      this.action == 'POP' ? this.animatePop() : this.animatePush();
     }
 
     this.fromGesture = false;
+    this.canAnimate = true;
   };
 
   _proto2.render = function render() {
-    return this.match ? this.action == 'POP' ? this.renderPop() : this.renderPush() : null;
+    this.preRender();
+    return this.matchPage ? this.action == 'POP' ? this.renderPop() : this.renderPush() : '404';
   };
 
   return AnimateRoute;

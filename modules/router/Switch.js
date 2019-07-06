@@ -62,6 +62,7 @@ class AnimateRoute extends React.Component {
   currentPage = null
   matchPage = null
   action = ''
+  canAnimate = true
   SCREEN_WIDTH = window.innerWidth
   MATCH_SCREEN_OFFSET = this.SCREEN_WIDTH
   BOTTOM_SCREEN_OFFSET = -this.SCREEN_WIDTH * 0.3
@@ -88,13 +89,12 @@ class AnimateRoute extends React.Component {
     }
   }
 
-
-  componentWillMount() {
-    this.match = this.findMatchElement(this.props.adapt)
-  }
-
-  componentWillReceiveProps(nextProps, nextContext) {
-    this.match = this.findMatchElement(nextProps.adapt)
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (this.canAnimate && !this.fromGesture) {
+      this.action == 'POP' ? this.animatePop() : this.animatePush()
+    }
+    this.fromGesture = false
+    this.canAnimate = true
   }
 
   easeInQuad = (time, begin, change, duration) => {
@@ -157,42 +157,32 @@ class AnimateRoute extends React.Component {
     this.animate({ begin: 0, end: this.BOTTOM_SCREEN_OFFSET, ref: this.currentRef })
   }
 
-  componentDidUpdate(prevProps, prevState, snapshot) {
-    if (this.currentPage !== this.matchPage && !this.fromGesture) {
-      this.action == 'PUSH' ? this.animatePush() : this.animatePop()
-    }
-    this.fromGesture = false
-  }
 
-  findMatchElement = (context) => {
+  findMatchElement = (location) => {
     // We use React.Children.forEach instead of React.Children.toArray().find()
     // here because toArray adds keys to all child elements and we do not want
     // to trigger an unmount/remount for two <Route>s that render the same
     // component at different URLs.
     let element, match
-    const location = this.props.location || context.location
-
-    this.action = context.history.action
-
-    this.currentPage = this.matchPage
-
+    location = location || this.props.location || this.props.adapt.location
     React.Children.forEach(this.props.children, child => {
       if (match == null && React.isValidElement(child)) {
         element = child
 
-
         const path = child.props.path || child.props.from
-
         match = path
             ? matchPath(location.pathname, { ...child.props, path })
-            : context.match
+            : this.props.adapt.match
       }
     })
-    this.matchPage = React.cloneElement(element, {
+    return match ? React.cloneElement(element, {
       location,
       computedMatch: match,
-    })
-    return match
+    }) : null
+  }
+
+  findMatchElementByLocation = (location) => {
+    return this.findMatchElement(location)
   }
 
   // 页面平移
@@ -299,29 +289,11 @@ class AnimateRoute extends React.Component {
 
   renderGesture = () => {
 
-    if (window.globalManger.length < 2) {
-      this.toggleBodyTouch(true)
+    if (this.single) {
       return this.matchPage
     }
 
-    this.toggleBodyTouch(false)
-
-    let match, element
-    React.Children.forEach(this.props.children, child => {
-      if (match == null && React.isValidElement(child)) {
-        element = child
-
-        const path = child.props.path || child.props.from
-
-        match = matchPath(window.globalManger[window.globalManger.length - 2].pathname, { ...child.props, path })
-      }
-    })
-
-    this.currentPage = React.cloneElement(element, {
-      location: window.globalManger[window.globalManger.length - 2],
-      computedMatch: match,
-    })
-
+    this.currentPage = this.findMatchElementByLocation(window.globalManger[window.globalManger.length - 2])
 
     return <>
       <div style={{ transform: `translate3d(${this.BOTTOM_SCREEN_OFFSET}px,0px,0)`, ...this.SIZE, gesture_current }}
@@ -342,20 +314,21 @@ class AnimateRoute extends React.Component {
 
     if (!this.currentPage) return this.matchPage
 
-
     if (this.fromGesture) {
       return this.renderGesture()
     }
 
-    const single = window.globalManger.length == 1
-
-    this.toggleBodyTouch(single)
+    if (this.currentPage.props.path == this.matchPage.props.path) {
+      this.props.adapt.history.goBack()
+      this.canAnimate=false
+      return this.matchPage
+    }
 
     return (
         <>
-          <div onTouchStart={single ? null : this.onTouchStart}
-               onTouchMove={single ? null : this.onTouchMove}
-               onTouchEnd={single ? null : this.onTouchEnd}
+          <div onTouchStart={this.single ? null : this.onTouchStart}
+               onTouchMove={this.single ? null : this.onTouchMove}
+               onTouchEnd={this.single ? null : this.onTouchEnd}
                style={{ transform: `translate3d(${this.BOTTOM_SCREEN_OFFSET}px,0px,0)`, ...this.SIZE, ...pop_match }}
                key={Math.random()}
                ref={ref => this.matchRef = ref}>
@@ -371,11 +344,6 @@ class AnimateRoute extends React.Component {
   }
 
   renderPush = () => {
-
-    const single = window.globalManger.length == 1
-
-    this.toggleBodyTouch(single)
-
     return (
         <>
           <div style={{ transform: `translate3d(0px,0px,0)`, ...this.SIZE, ...push_current }}
@@ -392,10 +360,20 @@ class AnimateRoute extends React.Component {
     )
   }
 
+  preRender = () => {
+    this.action = this.props.adapt.history.action
+    this.single = window.globalManger.length == 1
+    this.toggleBodyTouch(this.single)
+    this.currentPage = this.matchPage
+    this.matchPage = this.findMatchElement()
+  }
+
   render() {
-    return this.match
-        ? this.action == 'POP' ? this.renderPop() : this.renderPush()
-        : null
+    this.preRender()
+    return this.matchPage
+        ? this.action == 'POP' ? this.renderPop()
+            : this.renderPush()
+        : '404'
   }
 
 }
