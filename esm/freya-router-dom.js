@@ -11,6 +11,7 @@ import pathToRegexp from 'path-to-regexp';
 import { isValidElementType } from 'react-is';
 import _objectWithoutPropertiesLoose from '@babel/runtime/helpers/esm/objectWithoutPropertiesLoose';
 import hoistStatics from 'hoist-non-react-statics';
+import { KeepAlive, Provider } from 'react-keep-alive';
 
 function addLeadingSlash(path) {
   return path.charAt(0) === '/' ? path : '/' + path;
@@ -2011,11 +2012,17 @@ function withRouter(Component) {
 }
 
 function renderRoutes(routes) {
-  return React.createElement(Switch, null, routes.map(function (route, idx) {
+  return React.createElement(Provider, null, React.createElement(Switch, null, routes.map(function (route, idx) {
     return React.createElement(Route, _extends({
       key: idx
-    }, route));
-  }));
+    }, route, {
+      component: function component(props) {
+        return React.createElement(KeepAlive, {
+          name: idx.toString()
+        }, React.createElement(route.component, props));
+      }
+    }));
+  })));
 }
 
 if (process.env.NODE_ENV !== "production") {

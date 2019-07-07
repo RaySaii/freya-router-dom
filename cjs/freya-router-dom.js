@@ -12,6 +12,7 @@ var PropTypes = _interopDefault(require('prop-types'));
 var pathToRegexp = _interopDefault(require('path-to-regexp'));
 var reactIs = require('react-is');
 var hoistStatics = _interopDefault(require('hoist-non-react-statics'));
+var reactKeepAlive = require('react-keep-alive');
 
 function _extends() {
   _extends = Object.assign || function (target) {
@@ -2051,11 +2052,17 @@ function withRouter(Component) {
 }
 
 function renderRoutes(routes) {
-  return React.createElement(Switch, null, routes.map(function (route, idx) {
+  return React.createElement(reactKeepAlive.Provider, null, React.createElement(Switch, null, routes.map(function (route, idx) {
     return React.createElement(Route, _extends({
       key: idx
-    }, route));
-  }));
+    }, route, {
+      component: function component(props) {
+        return React.createElement(reactKeepAlive.KeepAlive, {
+          name: idx.toString()
+        }, React.createElement(route.component, props));
+      }
+    }));
+  })));
 }
 
 {

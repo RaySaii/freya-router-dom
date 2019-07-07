@@ -44,6 +44,7 @@
     "mini-create-react-context": "^0.3.2",
     "prop-types": "^15.6.2",
     "react-is": "^16.8.6",
+    "react-keep-alive": "^2.1.0",
     "rollup-plugin-local-resolve": "^1.0.7",
     "tiny-invariant": "^1.0.2",
     "tiny-warning": "^1.0.0"
