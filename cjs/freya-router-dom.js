@@ -2045,9 +2045,9 @@ function withRouter(Component) {
 }
 
 function renderRoutes(routes) {
-  return React.createElement(Switch, null, routes.map(function (route) {
+  return React.createElement(Switch, null, routes.map(function (route, idx) {
     return React.createElement(Route, _extends({
-      key: route.path.toString()
+      key: idx
     }, route));
   }));
 }
