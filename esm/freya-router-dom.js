@@ -1610,12 +1610,12 @@ function (_React$Component2) {
 
     _this2.toggleBodyTouch = function (bool) {
       if (!bool) {
-        console.log('======== disabled =========');
+        // console.log('======== disabled =========')
         document.body.addEventListener('touchmove', _this2.disabledBodyTouch, {
           passive: false
         });
       } else {
-        console.log('======== enable =========');
+        // console.log('======== enable =========')
         document.body.removeEventListener('touchmove', _this2.disabledBodyTouch);
       }
     };
@@ -2004,6 +2004,14 @@ function withRouter(Component) {
   return hoistStatics(C, Component);
 }
 
+function renderRoutes(routes) {
+  return React.createElement(Switch, null, routes.map(function (route) {
+    return React.createElement(Route, _extends({
+      key: route.path.toString()
+    }, route));
+  }));
+}
+
 if (process.env.NODE_ENV !== "production") {
   if (typeof window !== "undefined") {
     var global = window;
@@ -2270,4 +2278,4 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-export { BrowserRouter, HashRouter, Link, NavLink, MemoryRouter, Prompt, Redirect, Route, Router, StaticRouter, Switch, generatePath, matchPath, withRouter, context as __RouterContext, createBrowserHistory, createHashHistory, createMemoryHistory, createLocation, locationsAreEqual, parsePath, createPath };
+export { BrowserRouter, HashRouter, Link, NavLink, MemoryRouter, Prompt, Redirect, Route, Router, StaticRouter, Switch, generatePath, matchPath, withRouter, renderRoutes, context as __RouterContext, createBrowserHistory, createHashHistory, createMemoryHistory, createLocation, locationsAreEqual, parsePath, createPath };

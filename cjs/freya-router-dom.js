@@ -1650,12 +1650,12 @@ function (_React$Component2) {
 
     _this2.toggleBodyTouch = function (bool) {
       if (!bool) {
-        console.log('======== disabled =========');
+        // console.log('======== disabled =========')
         document.body.addEventListener('touchmove', _this2.disabledBodyTouch, {
           passive: false
         });
       } else {
-        console.log('======== enable =========');
+        // console.log('======== enable =========')
         document.body.removeEventListener('touchmove', _this2.disabledBodyTouch);
       }
     };
@@ -2044,6 +2044,14 @@ function withRouter(Component) {
   return hoistStatics(C, Component);
 }
 
+function renderRoutes(routes) {
+  return React.createElement(Switch, null, routes.map(function (route) {
+    return React.createElement(Route, _extends({
+      key: route.path.toString()
+    }, route));
+  }));
+}
+
 {
   if (typeof window !== "undefined") {
     var global = window;
@@ -2324,6 +2332,7 @@ exports.Switch = Switch;
 exports.generatePath = generatePath;
 exports.matchPath = matchPath;
 exports.withRouter = withRouter;
+exports.renderRoutes = renderRoutes;
 exports.__RouterContext = context;
 exports.createBrowserHistory = createBrowserHistory;
 exports.createHashHistory = createHashHistory;

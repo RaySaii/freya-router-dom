@@ -79,12 +79,12 @@ class AnimateRoute extends React.Component {
   //magic code
   toggleBodyTouch = (bool) => {
     if (!bool) {
-      console.log('======== disabled =========')
+      // console.log('======== disabled =========')
       document.body.addEventListener('touchmove', this.disabledBodyTouch, {
         passive: false,
       })
     } else {
-      console.log('======== enable =========')
+      // console.log('======== enable =========')
       document.body.removeEventListener('touchmove', this.disabledBodyTouch)
     }
   }
