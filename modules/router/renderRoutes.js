@@ -6,7 +6,7 @@ export default function renderRoutes(routes) {
   return (
       <Switch>
         {
-          routes.map(route => <Route key={route.path.toString()} {...route}/>)
+          routes.map((route,idx) => <Route key={idx} {...route}/>)
         }
       </Switch>
   )
