@@ -1947,6 +1947,12 @@ function (_React$Component2) {
     };
 
     _this2.renderPush = function () {
+      //入口重定向
+      if (_this2.single && _this2.action == 'REPLACE') {
+        _this2.canAnimate = false;
+        return _this2.matchPage;
+      }
+
       return React.createElement(React.Fragment, null, React.createElement("div", {
         style: _extends({
           transform: "translate3d(0px,0px,0)"

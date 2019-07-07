@@ -320,7 +320,7 @@ class AnimateRoute extends React.Component {
 
     if (this.currentPage.props.path == this.matchPage.props.path) {
       this.props.adapt.history.goBack()
-      this.canAnimate=false
+      this.canAnimate = false
       return this.matchPage
     }
 
@@ -344,6 +344,11 @@ class AnimateRoute extends React.Component {
   }
 
   renderPush = () => {
+    //入口重定向
+    if (this.single && this.action == 'REPLACE') {
+      this.canAnimate = false
+      return this.matchPage
+    }
     return (
         <>
           <div style={{ transform: `translate3d(0px,0px,0)`, ...this.SIZE, ...push_current }}
