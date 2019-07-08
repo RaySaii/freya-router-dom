@@ -311,15 +311,18 @@ class AnimateRoute extends React.Component {
   }
 
   renderPop = () => {
-
-    if (!this.currentPage) return this.matchPage
+    if (!this.currentPage) {
+      return this.matchPage
+    }
 
     if (this.fromGesture) {
       return this.renderGesture()
     }
 
     if (this.currentPage.props.path == this.matchPage.props.path) {
-      this.props.adapt.history.goBack()
+      if (window.globalManger.length > 1) {
+        this.props.adapt.history.goBack()
+      }
       this.canAnimate = false
       return this.matchPage
     }

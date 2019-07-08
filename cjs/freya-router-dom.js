@@ -323,6 +323,8 @@ function createBrowserHistory(props) {
   var transitionManager = createTransitionManager();
 
   function setState(nextState) {
+    console.log("======== okdsd =========");
+
     if (nextState && nextState.action == 'PUSH') {
       window.globalManger.push(nextState.location);
     } else if (nextState.action == 'REPLACE') {
@@ -1912,14 +1914,18 @@ function (_React$Component2) {
     };
 
     _this2.renderPop = function () {
-      if (!_this2.currentPage) return _this2.matchPage;
+      if (!_this2.currentPage) {
+        return _this2.matchPage;
+      }
 
       if (_this2.fromGesture) {
         return _this2.renderGesture();
       }
 
       if (_this2.currentPage.props.path == _this2.matchPage.props.path) {
-        _this2.props.adapt.history.goBack();
+        if (window.globalManger.length > 1) {
+          _this2.props.adapt.history.goBack();
+        }
 
         _this2.canAnimate = false;
         return _this2.matchPage;

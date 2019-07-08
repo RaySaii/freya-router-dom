@@ -85,6 +85,7 @@ function createBrowserHistory(props = {}) {
   const transitionManager = createTransitionManager()
 
   function setState(nextState) {
+    console.log("======== okdsd =========");
     if (nextState && nextState.action == 'PUSH') {
       window.globalManger.push(nextState.location)
     } else if (nextState.action == 'REPLACE') {
