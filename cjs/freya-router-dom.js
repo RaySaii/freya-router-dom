@@ -2059,7 +2059,7 @@ function renderRoutes(routes) {
       component: function component(props) {
         return React.createElement(reactKeepAlive.KeepAlive, {
           name: idx.toString()
-        }, React.createElement(route.component, props));
+        }, React.createElement("div", null, React.createElement(route.component, props)));
       }
     }));
   })));

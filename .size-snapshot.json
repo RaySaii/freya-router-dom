@@ -24,9 +24,9 @@
     "gzipped": 4731
   },
   "esm/freya-router-dom.js": {
-    "bundled": 72769,
-    "minified": 37296,
-    "gzipped": 9517,
+    "bundled": 72803,
+    "minified": 37328,
+    "gzipped": 9521,
     "treeshaked": {
       "rollup": {
         "code": 15965,
