@@ -283,8 +283,6 @@ function createBrowserHistory(props) {
   var transitionManager = createTransitionManager();
 
   function setState(nextState) {
-    console.log("======== okdsd =========");
-
     if (nextState && nextState.action == 'PUSH') {
       window.globalManger.push(nextState.location);
     } else if (nextState.action == 'REPLACE') {
@@ -2025,7 +2023,12 @@ function renderRoutes(routes) {
       component: function component(props) {
         return React.createElement(KeepAlive, {
           name: idx.toString()
-        }, React.createElement("div", null, React.createElement(route.component, props)));
+        }, React.createElement("div", {
+          style: {
+            width: '100%',
+            height: '100%'
+          }
+        }, React.createElement(route.component, props)));
       }
     }));
   })));

@@ -9,7 +9,7 @@ export default function renderRoutes(routes) {
         <Switch>
           {routes.map((route, idx) => <Route key={idx} {...route} component={props =>
               <KeepAlive name={idx.toString()}>
-                <div>
+                <div style={{ width: '100%', height: '100%' }}>
                   <route.component {...props}/>
                 </div>
               </KeepAlive>}/>)}
