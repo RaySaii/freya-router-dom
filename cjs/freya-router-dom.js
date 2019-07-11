@@ -1651,12 +1651,10 @@ function (_React$Component2) {
 
     _this2.toggleBodyTouch = function (bool) {
       if (!bool) {
-        // console.log('======== disabled =========')
         document.body.addEventListener('touchmove', _this2.disabledBodyTouch, {
           passive: false
         });
       } else {
-        // console.log('======== enable =========')
         document.body.removeEventListener('touchmove', _this2.disabledBodyTouch);
       }
     };
@@ -1790,6 +1788,7 @@ function (_React$Component2) {
       document.getElementById('root').style.overflow = 'hidden';
       _this2._ScreenX = _this2._startScreenX = e.touches[0].screenX;
       _this2.gestureBackActive = _this2._startScreenX < _this2.BACK_ACTIVE_POSITION;
+      console.log(_this2.gestureBackActive);
       _this2._lastScreenX = _this2._lastScreenX || 0;
       _this2.startTime = +new Date();
     };
@@ -2063,12 +2062,7 @@ function renderRoutes(routes) {
       component: function component(props) {
         return React.createElement(reactKeepAlive.KeepAlive, {
           name: idx.toString()
-        }, React.createElement("div", {
-          style: {
-            width: '100%',
-            height: '100%'
-          }
-        }, React.createElement(route.component, props)));
+        }, React.createElement("div", null, React.createElement(route.component, props)));
       }
     }));
   })));

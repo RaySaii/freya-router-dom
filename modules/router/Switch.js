@@ -79,12 +79,10 @@ class AnimateRoute extends React.Component {
   //magic code
   toggleBodyTouch = (bool) => {
     if (!bool) {
-      // console.log('======== disabled =========')
       document.body.addEventListener('touchmove', this.disabledBodyTouch, {
         passive: false,
       })
     } else {
-      // console.log('======== enable =========')
       document.body.removeEventListener('touchmove', this.disabledBodyTouch)
     }
   }
@@ -200,6 +198,7 @@ class AnimateRoute extends React.Component {
     document.getElementById('root').style.overflow = 'hidden'
     this._ScreenX = this._startScreenX = e.touches[0].screenX
     this.gestureBackActive = this._startScreenX < this.BACK_ACTIVE_POSITION
+    console.log(this.gestureBackActive);
     this._lastScreenX = this._lastScreenX || 0
     this.startTime = +new Date()
   }
