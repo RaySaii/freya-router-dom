@@ -1793,13 +1793,13 @@ function (_React$Component2) {
     };
 
     _this2.onTouchEnd = function (e) {
-      //不是从左侧特定区域开始滑动
+      document.getElementById('root').style.overflow = null; //不是从左侧特定区域开始滑动
+
       if (!_this2.gestureBackActive) {
         return;
       }
 
-      var deltaT = +new Date() - _this2.startTime;
-      document.getElementById('root').style.overflow = null; //速度快而且滑动了一段距离
+      var deltaT = +new Date() - _this2.startTime; //速度快而且滑动了一段距离
 
       if (deltaT < 300 && _this2._lastScreenX > _this2.SCREEN_WIDTH * 0.2) {
         _this2.animate({

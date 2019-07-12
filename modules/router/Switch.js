@@ -241,12 +241,12 @@ class AnimateRoute extends React.Component {
   }
 
   onTouchEnd = (e) => {
+    document.getElementById('root').style.overflow = null
     //不是从左侧特定区域开始滑动
     if (!this.gestureBackActive) {
       return
     }
     let deltaT = +new Date() - this.startTime
-    document.getElementById('root').style.overflow = null
     //速度快而且滑动了一段距离
     if (deltaT < 300 && this._lastScreenX > this.SCREEN_WIDTH * 0.2) {
       this.animate({
