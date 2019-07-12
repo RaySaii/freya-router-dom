@@ -1600,8 +1600,8 @@ function (_React$Component2) {
     _this2.BOTTOM_SCREEN_OFFSET = -_this2.SCREEN_WIDTH * 0.3;
     _this2.BACK_ACTIVE_POSITION = _this2.SCREEN_WIDTH * 0.1;
     _this2.SIZE = {
-      width: window.innerWidth,
-      minHeight: window.innerHeight
+      width: window.screen.width,
+      minHeight: window.screen.height
     };
 
     _this2.easeInQuad = function (time, begin, change, duration) {
@@ -1665,7 +1665,10 @@ function (_React$Component2) {
       _this2.animate({
         begin: _this2.BOTTOM_SCREEN_OFFSET,
         end: 0,
-        ref: _this2.matchRef
+        ref: _this2.matchRef,
+        done: function done(_) {
+          return _this2.matchRef.style.transform = null;
+        }
       });
 
       _this2.animate({
@@ -1682,7 +1685,10 @@ function (_React$Component2) {
       _this2.animate({
         begin: _this2.MATCH_SCREEN_OFFSET,
         end: 0,
-        ref: _this2.matchRef
+        ref: _this2.matchRef,
+        done: function done(_) {
+          return _this2.matchRef.style.transform = null;
+        }
       });
 
       _this2.animate({

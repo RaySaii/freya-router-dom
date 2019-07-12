@@ -68,7 +68,7 @@ class AnimateRoute extends React.Component {
   BOTTOM_SCREEN_OFFSET = -this.SCREEN_WIDTH * 0.3
   BACK_ACTIVE_POSITION = this.SCREEN_WIDTH * 0.1
 
-  SIZE = { width: window.innerWidth, minHeight: window.innerHeight }
+  SIZE = { width: window.screen.width, minHeight:window.screen.height }
 
 
   componentDidUpdate(prevProps, prevState, snapshot) {
@@ -124,7 +124,12 @@ class AnimateRoute extends React.Component {
 
   //matchPage -> prePage ->
   animatePop = () => {
-    this.animate({ begin: this.BOTTOM_SCREEN_OFFSET, end: 0, ref: this.matchRef })
+    this.animate({
+      begin: this.BOTTOM_SCREEN_OFFSET,
+      end: 0,
+      ref: this.matchRef,
+      done: _ => this.matchRef.style.transform = null,
+    })
     this.animate({
       begin: 0,
       end: this.MATCH_SCREEN_OFFSET,
@@ -135,7 +140,12 @@ class AnimateRoute extends React.Component {
 
   //prePage <- matchPage <-
   animatePush = () => {
-    this.animate({ begin: this.MATCH_SCREEN_OFFSET, end: 0, ref: this.matchRef })
+    this.animate({
+      begin: this.MATCH_SCREEN_OFFSET,
+      end: 0,
+      ref: this.matchRef,
+      done: _ => this.matchRef.style.transform = null,
+    })
     this.animate({
       begin: 0,
       end: this.BOTTOM_SCREEN_OFFSET,
