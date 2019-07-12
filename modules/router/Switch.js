@@ -11,14 +11,14 @@ const push_match = {
   boxShadow: '-2px 0 5px rgba(0, 0, 0, .2)',
 }
 
-const push_current = {
+const push_pre = {
   zIndex: -1,
   position: 'absolute',
   left: 0,
   top: 0,
 }
 
-const gesture_current = {
+const gesture_pre = {
   zIndex: -1,
   position: 'absolute',
   left: 0,
@@ -30,7 +30,7 @@ const pop_match = {
   boxShadow: '-2px 0 5px rgba(0, 0, 0, .2)',
 }
 
-const pop_current = {
+const pop_pre = {
   position: 'absolute',
   left: 0,
   top: 0,
@@ -59,7 +59,7 @@ const isWebView = typeof navigator !== 'undefined' &&
 
 class AnimateRoute extends React.Component {
 
-  currentPage = null
+  prePage = null
   matchPage = null
   action = ''
   canAnimate = true
@@ -68,24 +68,8 @@ class AnimateRoute extends React.Component {
   BOTTOM_SCREEN_OFFSET = -this.SCREEN_WIDTH * 0.3
   BACK_ACTIVE_POSITION = this.SCREEN_WIDTH * 0.1
 
-  SIZE = { width: window.innerWidth, height: window.innerHeight }
+  SIZE = { width: window.innerWidth, minHeight: window.innerHeight }
 
-
-  disabledBodyTouch = (e) => {
-    if (e._isScroller) return
-    e.preventDefault()
-  }
-
-  //magic code
-  toggleBodyTouch = (bool) => {
-    if (!bool) {
-      document.body.addEventListener('touchmove', this.disabledBodyTouch, {
-        passive: false,
-      })
-    } else {
-      document.body.removeEventListener('touchmove', this.disabledBodyTouch)
-    }
-  }
 
   componentDidUpdate(prevProps, prevState, snapshot) {
     if (this.canAnimate && !this.fromGesture) {
@@ -138,21 +122,26 @@ class AnimateRoute extends React.Component {
     loop(0)
   }
 
-  //matchPage -> currentPage ->
+  //matchPage -> prePage ->
   animatePop = () => {
     this.animate({ begin: this.BOTTOM_SCREEN_OFFSET, end: 0, ref: this.matchRef })
     this.animate({
       begin: 0,
       end: this.MATCH_SCREEN_OFFSET,
-      ref: this.currentRef,
-      done: _ => this.currentRef.style.display = 'none',
+      ref: this.preRef,
+      done: _ => this.preRef.style.display = 'none',
     })
   }
 
-  //currentPage <- matchPage <-
+  //prePage <- matchPage <-
   animatePush = () => {
     this.animate({ begin: this.MATCH_SCREEN_OFFSET, end: 0, ref: this.matchRef })
-    this.animate({ begin: 0, end: this.BOTTOM_SCREEN_OFFSET, ref: this.currentRef })
+    this.animate({
+      begin: 0,
+      end: this.BOTTOM_SCREEN_OFFSET,
+      ref: this.preRef,
+      done: this.hideBottom,
+    })
   }
 
 
@@ -191,14 +180,25 @@ class AnimateRoute extends React.Component {
 
   setBottomTransform = (translate) => {
     const t = this.BOTTOM_SCREEN_OFFSET + translate * 0.3
-    this.currentRef.style.transform = `translate3d(${t}px,0px,0)`
+    this.preRef.style.transform = `translate3d(${t}px,0px,0)`
+  }
+
+  hideBottom = () => {
+    this.preRef.style.opacity = 0
+  }
+
+  showBottom = () => {
+    this.preRef.style.opacity = null
   }
 
   onTouchStart = (e) => {
     document.getElementById('root').style.overflow = 'hidden'
     this._ScreenX = this._startScreenX = e.touches[0].screenX
     this.gestureBackActive = this._startScreenX < this.BACK_ACTIVE_POSITION
-    console.log(this.gestureBackActive);
+    if (!this.gestureBackActive) {
+      return
+    }
+    this.showBottom()
     this._lastScreenX = this._lastScreenX || 0
     this.startTime = +new Date()
   }
@@ -206,7 +206,9 @@ class AnimateRoute extends React.Component {
 
   onTouchMove = (e) => {
 
-    if (!this.gestureBackActive) return
+    if (!this.gestureBackActive) {
+      return
+    }
 
     // 使用 pageX 对比有问题
     const _screenX = e.touches[0].screenX
@@ -235,19 +237,22 @@ class AnimateRoute extends React.Component {
   }
 
   reset = () => {
-    this.animate({ begin: this._lastScreenX, end: 0, ref: this.matchRef })
+    this.animate({ begin: this._lastScreenX, end: 0, ref: this.matchRef, done: this.hideBottom })
   }
 
   onTouchEnd = (e) => {
     //不是从左侧特定区域开始滑动
-    if (!this.gestureBackActive) return
+    if (!this.gestureBackActive) {
+      return
+    }
     let deltaT = +new Date() - this.startTime
     document.getElementById('root').style.overflow = null
+    //速度快而且滑动了一段距离
     if (deltaT < 300 && this._lastScreenX > this.SCREEN_WIDTH * 0.2) {
       this.animate({
         begin: this.BOTTOM_SCREEN_OFFSET + this._lastScreenX * 0.3,
         end: 0,
-        ref: this.currentRef,
+        ref: this.preRef,
         duration: 0.05,
       })
       this.animate({
@@ -261,17 +266,21 @@ class AnimateRoute extends React.Component {
       this._lastScreenX = 0
       this.fromGesture = true
       this.gestureBackActive = false
-    } else if (this._lastScreenX < this.SCREEN_WIDTH / 2) {
+    }
+    //滑动小于一半 恢复
+    else if (this._lastScreenX < this.SCREEN_WIDTH / 2) {
       this.reset()
       this.gestureBackActive = false
       this._lastScreenX = 0
     } else {
+      //将上一页划入
       this.animate({
         begin: this.BOTTOM_SCREEN_OFFSET + this._lastScreenX * 0.3,
         end: 0,
-        ref: this.currentRef,
+        ref: this.preRef,
         duration: 0.05,
       })
+      //将本页划出
       this.animate({
         begin: this._lastScreenX,
         end: this.SCREEN_WIDTH,
@@ -288,79 +297,158 @@ class AnimateRoute extends React.Component {
 
   renderGesture = () => {
 
+
     if (this.single) {
-      return this.matchPage
+      return <div ref={ref => this.preRef = this.matchRef = ref}>{this.matchPage}</div>
     }
 
-    this.currentPage = this.findMatchElementByLocation(window.globalManger[window.globalManger.length - 2])
+    //找到本页面上一个页面的path
+    const prevLocation = window.globalManger[window.globalManger.length - 2]
+    //找到上一个对应的组件
+    this.prePage = this.findMatchElementByLocation(prevLocation)
 
     return <>
-      <div style={{ transform: `translate3d(${this.BOTTOM_SCREEN_OFFSET}px,0px,0)`, ...this.SIZE, gesture_current }}
+      <div style={{
+        transform: `translate3d(${this.BOTTOM_SCREEN_OFFSET}px,0px,0)`,
+        ...this.SIZE,
+        ...gesture_pre,
+        opacity: 0,
+        position: 'fixed',
+        top: -window.globalPosition[prevLocation.pathname] || 0,
+      }}
            key={Math.random()}
-           ref={ref => this.currentRef = ref}>
-        {this.currentPage}
+           ref={ref => {
+             return this.preRef = ref
+           }}>
+        {this.prePage}
       </div>
-      <div onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove} onTouchEnd={this.onTouchEnd}
-           style={{ ...this.SIZE, ...pop_match }}
+      <div style={{ ...this.SIZE, ...pop_match }}
            key={Math.random()}
-           ref={ref => this.matchRef = ref}>
+           ref={ref => {
+             if (ref) {
+               ref.removeEventListener('touchstart', this.onTouchStart)
+               ref.removeEventListener('touchmove', this.onTouchMove)
+               ref.removeEventListener('touchend', this.onTouchEnd)
+               ref.addEventListener('touchstart', this.onTouchStart)
+               ref.addEventListener('touchmove', this.onTouchMove)
+               ref.addEventListener('touchend', this.onTouchEnd)
+               ref.addEventListener('touchstart', this.onTouchStart)
+               ref.addEventListener('touchmove', this.onTouchMove)
+               ref.addEventListener('touchend', this.onTouchEnd)
+             }
+             this.matchRef = ref
+           }}>
         {this.matchPage}
       </div>
     </>
   }
 
   renderPop = () => {
-    if (!this.currentPage) {
-      return this.matchPage
+
+    if (!this.prePage) {
+      return <div ref={ref => this.matchRef = ref}>{this.matchPage}</div>
     }
 
     if (this.fromGesture) {
       return this.renderGesture()
     }
 
-    if (this.currentPage.props.path == this.matchPage.props.path) {
+    //回退碰到了相同页面
+    if (this.prePage.props.path == this.matchPage.props.path) {
+      //还能回退
       if (window.globalManger.length > 1) {
         this.props.adapt.history.goBack()
+      } else {
+        this.canAnimate = false
+        return <div ref={ref => this.matchRef = ref}>{this.matchPage}</div>
       }
-      this.canAnimate = false
-      return this.matchPage
     }
 
     return (
         <>
-          <div onTouchStart={this.single ? null : this.onTouchStart}
-               onTouchMove={this.single ? null : this.onTouchMove}
-               onTouchEnd={this.single ? null : this.onTouchEnd}
-               style={{ transform: `translate3d(${this.BOTTOM_SCREEN_OFFSET}px,0px,0)`, ...this.SIZE, ...pop_match }}
+          <div style={{
+            transform: `translate3d(${this.BOTTOM_SCREEN_OFFSET}px,0px,0)`,
+            ...this.SIZE,
+            ...pop_match,
+          }}
                key={Math.random()}
-               ref={ref => this.matchRef = ref}>
+               ref={ref => {
+                 if (ref) {
+                   ref.removeEventListener('touchstart', this.onTouchStart)
+                   ref.removeEventListener('touchmove', this.onTouchMove)
+                   ref.removeEventListener('touchend', this.onTouchEnd)
+                   ref.addEventListener('touchstart', this.onTouchStart)
+                   ref.addEventListener('touchmove', this.onTouchMove)
+                   ref.addEventListener('touchend', this.onTouchEnd)
+                 }
+                 this.matchRef = ref
+               }}>
             {this.matchPage}
           </div>
-          <div style={{ transform: `translate3d(0px,0px,0)`, ...this.SIZE, ...pop_current }}
+          <div style={{
+            transform: `translate3d(0px,0px,0)`,
+            ...this.SIZE,
+            ...pop_pre,
+            position: 'fixed',
+            top: window.globalPosition ? -window.globalPosition[this.prePage.props.path] : 0,
+          }}
                key={Math.random()}
-               ref={ref => this.currentRef = ref}>
-            {this.currentPage}
+               ref={ref => this.preRef = ref}>
+            {this.prePage}
           </div>
         </>
     )
   }
 
+  correctPosition = (key) => {
+    window.globalPosition = window.globalPosition || {}
+    window.globalPosition[key] = document.documentElement.scrollTop || document.body.scrollTop
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+    return window.globalPosition[key]
+  }
+
   renderPush = () => {
+
     //入口重定向
     if (this.single && this.action == 'REPLACE') {
       this.canAnimate = false
-      return this.matchPage
+      return <div ref={ref => this.preRef = this.matchRef = ref}>{this.matchPage}</div>
     }
+
+    const preLocation = window.globalManger[window.globalManger.length - 2]
+
+    this.correctPosition(preLocation.pathname)
+
     return (
         <>
-          <div style={{ transform: `translate3d(0px,0px,0)`, ...this.SIZE, ...push_current }}
+          <div style={{
+            transform: `translate3d(0px,0px,0)`,
+            ...this.SIZE,
+            ...push_pre,
+            position: 'fixed',
+            top: -window.globalPosition[preLocation.pathname] || 0,
+          }}
                key={Math.random()}
-               ref={ref => this.currentRef = ref}>
-            {this.currentPage}
+               ref={ref => this.preRef = ref}>
+            {this.prePage}
           </div>
-          <div onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove} onTouchEnd={this.onTouchEnd}
-               style={{ transform: `translate3d(${this.MATCH_SCREEN_OFFSET}px,0px,0)`, ...this.SIZE, ...push_match }}
-               key={Math.random()} ref={ref => this.matchRef = ref}>
+          <div style={{ transform: `translate3d(${this.MATCH_SCREEN_OFFSET}px,0px,0)`, ...this.SIZE, ...push_match }}
+               key={Math.random()}
+               ref={ref => {
+                 if (ref) {
+                   ref.removeEventListener('touchstart', this.onTouchStart)
+                   ref.removeEventListener('touchmove', this.onTouchMove)
+                   ref.removeEventListener('touchend', this.onTouchEnd)
+                   ref.addEventListener('touchstart', this.onTouchStart)
+                   ref.addEventListener('touchmove', this.onTouchMove)
+                   ref.addEventListener('touchend', this.onTouchEnd)
+                   ref.addEventListener('touchstart', this.onTouchStart)
+                   ref.addEventListener('touchmove', this.onTouchMove)
+                   ref.addEventListener('touchend', this.onTouchEnd)
+                 }
+                 this.matchRef = ref
+               }}>
             {this.matchPage}
           </div>
         </>
@@ -370,8 +458,11 @@ class AnimateRoute extends React.Component {
   preRender = () => {
     this.action = this.props.adapt.history.action
     this.single = window.globalManger.length == 1
-    this.toggleBodyTouch(this.single)
-    this.currentPage = this.matchPage
+    document.addEventListener('WinJSBridgeReady', _ => {
+      window.WinJSBridge.call('webview', 'dragbackenable', { enable: this.single })
+    })
+    // this.toggleBodyTouch(this.single)
+    this.prePage = this.matchPage
     this.matchPage = this.findMatchElement()
   }
 

@@ -1524,13 +1524,13 @@ var push_match = {
   background: '#fff',
   boxShadow: '-2px 0 5px rgba(0, 0, 0, .2)'
 };
-var push_current = {
+var push_pre = {
   zIndex: -1,
   position: 'absolute',
   left: 0,
   top: 0
 };
-var gesture_current = {
+var gesture_pre = {
   zIndex: -1,
   position: 'absolute',
   left: 0,
@@ -1540,7 +1540,7 @@ var pop_match = {
   background: '#fff',
   boxShadow: '-2px 0 5px rgba(0, 0, 0, .2)'
 };
-var pop_current = {
+var pop_pre = {
   position: 'absolute',
   left: 0,
   top: 0,
@@ -1591,7 +1591,7 @@ function (_React$Component2) {
     }
 
     _this2 = _React$Component2.call.apply(_React$Component2, [this].concat(args)) || this;
-    _this2.currentPage = null;
+    _this2.prePage = null;
     _this2.matchPage = null;
     _this2.action = '';
     _this2.canAnimate = true;
@@ -1601,22 +1601,7 @@ function (_React$Component2) {
     _this2.BACK_ACTIVE_POSITION = _this2.SCREEN_WIDTH * 0.1;
     _this2.SIZE = {
       width: window.innerWidth,
-      height: window.innerHeight
-    };
-
-    _this2.disabledBodyTouch = function (e) {
-      if (e._isScroller) return;
-      e.preventDefault();
-    };
-
-    _this2.toggleBodyTouch = function (bool) {
-      if (!bool) {
-        document.body.addEventListener('touchmove', _this2.disabledBodyTouch, {
-          passive: false
-        });
-      } else {
-        document.body.removeEventListener('touchmove', _this2.disabledBodyTouch);
-      }
+      minHeight: window.innerHeight
     };
 
     _this2.easeInQuad = function (time, begin, change, duration) {
@@ -1686,9 +1671,9 @@ function (_React$Component2) {
       _this2.animate({
         begin: 0,
         end: _this2.MATCH_SCREEN_OFFSET,
-        ref: _this2.currentRef,
+        ref: _this2.preRef,
         done: function done(_) {
-          return _this2.currentRef.style.display = 'none';
+          return _this2.preRef.style.display = 'none';
         }
       });
     };
@@ -1703,7 +1688,8 @@ function (_React$Component2) {
       _this2.animate({
         begin: 0,
         end: _this2.BOTTOM_SCREEN_OFFSET,
-        ref: _this2.currentRef
+        ref: _this2.preRef,
+        done: _this2.hideBottom
       });
     };
 
@@ -1741,20 +1727,37 @@ function (_React$Component2) {
 
     _this2.setBottomTransform = function (translate) {
       var t = _this2.BOTTOM_SCREEN_OFFSET + translate * 0.3;
-      _this2.currentRef.style.transform = "translate3d(" + t + "px,0px,0)";
+      _this2.preRef.style.transform = "translate3d(" + t + "px,0px,0)";
+    };
+
+    _this2.hideBottom = function () {
+      _this2.preRef.style.opacity = 0;
+    };
+
+    _this2.showBottom = function () {
+      _this2.preRef.style.opacity = null;
     };
 
     _this2.onTouchStart = function (e) {
       document.getElementById('root').style.overflow = 'hidden';
       _this2._ScreenX = _this2._startScreenX = e.touches[0].screenX;
       _this2.gestureBackActive = _this2._startScreenX < _this2.BACK_ACTIVE_POSITION;
-      console.log(_this2.gestureBackActive);
+
+      if (!_this2.gestureBackActive) {
+        return;
+      }
+
+      _this2.showBottom();
+
       _this2._lastScreenX = _this2._lastScreenX || 0;
       _this2.startTime = +new Date();
     };
 
     _this2.onTouchMove = function (e) {
-      if (!_this2.gestureBackActive) return; // 使用 pageX 对比有问题
+      if (!_this2.gestureBackActive) {
+        return;
+      } // 使用 pageX 对比有问题
+
 
       var _screenX = e.touches[0].screenX; // 拖动方向不符合的不处理
 
@@ -1784,21 +1787,25 @@ function (_React$Component2) {
       _this2.animate({
         begin: _this2._lastScreenX,
         end: 0,
-        ref: _this2.matchRef
+        ref: _this2.matchRef,
+        done: _this2.hideBottom
       });
     };
 
     _this2.onTouchEnd = function (e) {
       //不是从左侧特定区域开始滑动
-      if (!_this2.gestureBackActive) return;
+      if (!_this2.gestureBackActive) {
+        return;
+      }
+
       var deltaT = +new Date() - _this2.startTime;
-      document.getElementById('root').style.overflow = null;
+      document.getElementById('root').style.overflow = null; //速度快而且滑动了一段距离
 
       if (deltaT < 300 && _this2._lastScreenX > _this2.SCREEN_WIDTH * 0.2) {
         _this2.animate({
           begin: _this2.BOTTOM_SCREEN_OFFSET + _this2._lastScreenX * 0.3,
           end: 0,
-          ref: _this2.currentRef,
+          ref: _this2.preRef,
           duration: 0.05
         });
 
@@ -1814,127 +1821,216 @@ function (_React$Component2) {
         _this2._lastScreenX = 0;
         _this2.fromGesture = true;
         _this2.gestureBackActive = false;
-      } else if (_this2._lastScreenX < _this2.SCREEN_WIDTH / 2) {
-        _this2.reset();
+      } //滑动小于一半 恢复
+      else if (_this2._lastScreenX < _this2.SCREEN_WIDTH / 2) {
+          _this2.reset();
 
-        _this2.gestureBackActive = false;
-        _this2._lastScreenX = 0;
-      } else {
-        _this2.animate({
-          begin: _this2.BOTTOM_SCREEN_OFFSET + _this2._lastScreenX * 0.3,
-          end: 0,
-          ref: _this2.currentRef,
-          duration: 0.05
-        });
+          _this2.gestureBackActive = false;
+          _this2._lastScreenX = 0;
+        } else {
+          //将上一页划入
+          _this2.animate({
+            begin: _this2.BOTTOM_SCREEN_OFFSET + _this2._lastScreenX * 0.3,
+            end: 0,
+            ref: _this2.preRef,
+            duration: 0.05
+          }); //将本页划出
 
-        _this2.animate({
-          begin: _this2._lastScreenX,
-          end: _this2.SCREEN_WIDTH,
-          ref: _this2.matchRef,
-          done: _this2.props.adapt.history.goBack,
-          type: 'ease-out',
-          duration: 0.05
-        });
 
-        _this2.fromGesture = true;
-        _this2.gestureBackActive = false;
-        _this2._lastScreenX = 0;
-      }
+          _this2.animate({
+            begin: _this2._lastScreenX,
+            end: _this2.SCREEN_WIDTH,
+            ref: _this2.matchRef,
+            done: _this2.props.adapt.history.goBack,
+            type: 'ease-out',
+            duration: 0.05
+          });
+
+          _this2.fromGesture = true;
+          _this2.gestureBackActive = false;
+          _this2._lastScreenX = 0;
+        }
     };
 
     _this2.renderGesture = function () {
       if (_this2.single) {
-        return _this2.matchPage;
-      }
+        return React.createElement("div", {
+          ref: function ref(_ref2) {
+            return _this2.preRef = _this2.matchRef = _ref2;
+          }
+        }, _this2.matchPage);
+      } //找到本页面上一个页面的path
 
-      _this2.currentPage = _this2.findMatchElementByLocation(window.globalManger[window.globalManger.length - 2]);
+
+      var prevLocation = window.globalManger[window.globalManger.length - 2]; //找到上一个对应的组件
+
+      _this2.prePage = _this2.findMatchElementByLocation(prevLocation);
       return React.createElement(React.Fragment, null, React.createElement("div", {
         style: _extends({
           transform: "translate3d(" + _this2.BOTTOM_SCREEN_OFFSET + "px,0px,0)"
-        }, _this2.SIZE, {
-          gesture_current: gesture_current
+        }, _this2.SIZE, gesture_pre, {
+          opacity: 0,
+          position: 'fixed',
+          top: -window.globalPosition[prevLocation.pathname] || 0
         }),
         key: Math.random(),
-        ref: function ref(_ref2) {
-          return _this2.currentRef = _ref2;
+        ref: function ref(_ref3) {
+          return _this2.preRef = _ref3;
         }
-      }, _this2.currentPage), React.createElement("div", {
-        onTouchStart: _this2.onTouchStart,
-        onTouchMove: _this2.onTouchMove,
-        onTouchEnd: _this2.onTouchEnd,
+      }, _this2.prePage), React.createElement("div", {
         style: _extends({}, _this2.SIZE, pop_match),
         key: Math.random(),
-        ref: function ref(_ref3) {
-          return _this2.matchRef = _ref3;
+        ref: function ref(_ref4) {
+          if (_ref4) {
+            _ref4.removeEventListener('touchstart', _this2.onTouchStart);
+
+            _ref4.removeEventListener('touchmove', _this2.onTouchMove);
+
+            _ref4.removeEventListener('touchend', _this2.onTouchEnd);
+
+            _ref4.addEventListener('touchstart', _this2.onTouchStart);
+
+            _ref4.addEventListener('touchmove', _this2.onTouchMove);
+
+            _ref4.addEventListener('touchend', _this2.onTouchEnd);
+
+            _ref4.addEventListener('touchstart', _this2.onTouchStart);
+
+            _ref4.addEventListener('touchmove', _this2.onTouchMove);
+
+            _ref4.addEventListener('touchend', _this2.onTouchEnd);
+          }
+
+          _this2.matchRef = _ref4;
         }
       }, _this2.matchPage));
     };
 
     _this2.renderPop = function () {
-      if (!_this2.currentPage) {
-        return _this2.matchPage;
+      if (!_this2.prePage) {
+        return React.createElement("div", {
+          ref: function ref(_ref5) {
+            return _this2.matchRef = _ref5;
+          }
+        }, _this2.matchPage);
       }
 
       if (_this2.fromGesture) {
         return _this2.renderGesture();
-      }
+      } //回退碰到了相同页面
 
-      if (_this2.currentPage.props.path == _this2.matchPage.props.path) {
+
+      if (_this2.prePage.props.path == _this2.matchPage.props.path) {
+        //还能回退
         if (window.globalManger.length > 1) {
           _this2.props.adapt.history.goBack();
+        } else {
+          _this2.canAnimate = false;
+          return React.createElement("div", {
+            ref: function ref(_ref6) {
+              return _this2.matchRef = _ref6;
+            }
+          }, _this2.matchPage);
         }
-
-        _this2.canAnimate = false;
-        return _this2.matchPage;
       }
 
       return React.createElement(React.Fragment, null, React.createElement("div", {
-        onTouchStart: _this2.single ? null : _this2.onTouchStart,
-        onTouchMove: _this2.single ? null : _this2.onTouchMove,
-        onTouchEnd: _this2.single ? null : _this2.onTouchEnd,
         style: _extends({
           transform: "translate3d(" + _this2.BOTTOM_SCREEN_OFFSET + "px,0px,0)"
         }, _this2.SIZE, pop_match),
         key: Math.random(),
-        ref: function ref(_ref4) {
-          return _this2.matchRef = _ref4;
+        ref: function ref(_ref7) {
+          if (_ref7) {
+            _ref7.removeEventListener('touchstart', _this2.onTouchStart);
+
+            _ref7.removeEventListener('touchmove', _this2.onTouchMove);
+
+            _ref7.removeEventListener('touchend', _this2.onTouchEnd);
+
+            _ref7.addEventListener('touchstart', _this2.onTouchStart);
+
+            _ref7.addEventListener('touchmove', _this2.onTouchMove);
+
+            _ref7.addEventListener('touchend', _this2.onTouchEnd);
+          }
+
+          _this2.matchRef = _ref7;
         }
       }, _this2.matchPage), React.createElement("div", {
         style: _extends({
           transform: "translate3d(0px,0px,0)"
-        }, _this2.SIZE, pop_current),
+        }, _this2.SIZE, pop_pre, {
+          position: 'fixed',
+          top: window.globalPosition ? -window.globalPosition[_this2.prePage.props.path] : 0
+        }),
         key: Math.random(),
-        ref: function ref(_ref5) {
-          return _this2.currentRef = _ref5;
+        ref: function ref(_ref8) {
+          return _this2.preRef = _ref8;
         }
-      }, _this2.currentPage));
+      }, _this2.prePage));
+    };
+
+    _this2.correctPosition = function (key) {
+      window.globalPosition = window.globalPosition || {};
+      window.globalPosition[key] = document.documentElement.scrollTop || document.body.scrollTop;
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      return window.globalPosition[key];
     };
 
     _this2.renderPush = function () {
       //入口重定向
       if (_this2.single && _this2.action == 'REPLACE') {
         _this2.canAnimate = false;
-        return _this2.matchPage;
+        return React.createElement("div", {
+          ref: function ref(_ref9) {
+            return _this2.preRef = _this2.matchRef = _ref9;
+          }
+        }, _this2.matchPage);
       }
+
+      var preLocation = window.globalManger[window.globalManger.length - 2];
+
+      _this2.correctPosition(preLocation.pathname);
 
       return React.createElement(React.Fragment, null, React.createElement("div", {
         style: _extends({
           transform: "translate3d(0px,0px,0)"
-        }, _this2.SIZE, push_current),
+        }, _this2.SIZE, push_pre, {
+          position: 'fixed',
+          top: -window.globalPosition[preLocation.pathname] || 0
+        }),
         key: Math.random(),
-        ref: function ref(_ref6) {
-          return _this2.currentRef = _ref6;
+        ref: function ref(_ref10) {
+          return _this2.preRef = _ref10;
         }
-      }, _this2.currentPage), React.createElement("div", {
-        onTouchStart: _this2.onTouchStart,
-        onTouchMove: _this2.onTouchMove,
-        onTouchEnd: _this2.onTouchEnd,
+      }, _this2.prePage), React.createElement("div", {
         style: _extends({
           transform: "translate3d(" + _this2.MATCH_SCREEN_OFFSET + "px,0px,0)"
         }, _this2.SIZE, push_match),
         key: Math.random(),
-        ref: function ref(_ref7) {
-          return _this2.matchRef = _ref7;
+        ref: function ref(_ref11) {
+          if (_ref11) {
+            _ref11.removeEventListener('touchstart', _this2.onTouchStart);
+
+            _ref11.removeEventListener('touchmove', _this2.onTouchMove);
+
+            _ref11.removeEventListener('touchend', _this2.onTouchEnd);
+
+            _ref11.addEventListener('touchstart', _this2.onTouchStart);
+
+            _ref11.addEventListener('touchmove', _this2.onTouchMove);
+
+            _ref11.addEventListener('touchend', _this2.onTouchEnd);
+
+            _ref11.addEventListener('touchstart', _this2.onTouchStart);
+
+            _ref11.addEventListener('touchmove', _this2.onTouchMove);
+
+            _ref11.addEventListener('touchend', _this2.onTouchEnd);
+          }
+
+          _this2.matchRef = _ref11;
         }
       }, _this2.matchPage));
     };
@@ -1942,10 +2038,13 @@ function (_React$Component2) {
     _this2.preRender = function () {
       _this2.action = _this2.props.adapt.history.action;
       _this2.single = window.globalManger.length == 1;
+      document.addEventListener('WinJSBridgeReady', function (_) {
+        window.WinJSBridge.call('webview', 'dragbackenable', {
+          enable: _this2.single
+        });
+      }); // this.toggleBodyTouch(this.single)
 
-      _this2.toggleBodyTouch(_this2.single);
-
-      _this2.currentPage = _this2.matchPage;
+      _this2.prePage = _this2.matchPage;
       _this2.matchPage = _this2.findMatchElement();
     };
 
