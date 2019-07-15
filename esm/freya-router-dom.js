@@ -2219,7 +2219,7 @@ if (process.env.NODE_ENV !== "production") {
   };
 }
 
-var lte10 = navigator.userAgent.match(/Mac OS/) && navigator.userAgent.match(/os\s+(\d+)/i)[1] && navigator.userAgent.match(/os\s+(\d+)/i)[1] - 0 < 10;
+var lte10 = navigator.userAgent.match(/Mac OS/) && (navigator.userAgent.match(/os\s+(\d+)/i) ? false : navigator.userAgent.match(/os\s+(\d+)/i)[1] - 0 < 10);
 function renderRoutes(routes) {
   if (lte10) {
     return React.createElement(Provider, null, React.createElement(NormalSwitch, null, routes.map(function (route, idx) {
