@@ -4,7 +4,9 @@ import Route from './Route'
 import {KeepAlive, Provider as KeepAliveProvider} from 'react-keep-alive'
 import NormalSwitch from './NormalSwitch'
 
-const lte10 = navigator.userAgent.match(/Mac OS/) && navigator.userAgent.match(/os\s+(\d+)/i)[1] - 0 < 10
+const lte10 = navigator.userAgent.match(/Mac OS/)
+    && navigator.userAgent.match(/os\s+(\d+)/i)[1]
+    && navigator.userAgent.match(/os\s+(\d+)/i)[1] - 0 < 10
 
 export default function renderRoutes(routes) {
   if (lte10) {
