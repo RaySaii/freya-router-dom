@@ -333,7 +333,10 @@ function createBrowserHistory(props) {
         window.globalManger = window.globalManger.slice(0, goNum);
         goNum = null;
       } else {
-        window.globalManger.pop();
+        //ios9 init pop
+        if (window.globalManger.length !== 1) {
+          window.globalManger.pop();
+        }
       }
     }
 
@@ -1586,11 +1589,21 @@ var pop_pre = {
   top: 0,
   boxShadow: '-2px 0 5px rgba(0, 0, 0, .2)',
   background: '#fff'
-  /**
-   * The public API for rendering the first <Route> that matches.
-   */
-
 };
+
+function firstDivInBody() {
+  var children = document.body.children;
+
+  for (var i = 0; i < children.length; i++) {
+    if (children[i].tagName == 'DIV') {
+      return children[i];
+    }
+  }
+}
+/**
+ * The public API for rendering the first <Route> that matches.
+ */
+
 
 var Switch =
 /*#__PURE__*/
@@ -1631,17 +1644,20 @@ function (_React$Component2) {
     }
 
     _this2 = _React$Component2.call.apply(_React$Component2, [this].concat(args)) || this;
+    _this2.isRerender = false;
     _this2.prePage = null;
     _this2.matchPage = null;
     _this2.action = '';
     _this2.canAnimate = true;
+    _this2.single = true;
     _this2.SCREEN_WIDTH = window.innerWidth;
     _this2.MATCH_SCREEN_OFFSET = _this2.SCREEN_WIDTH;
     _this2.BOTTOM_SCREEN_OFFSET = -_this2.SCREEN_WIDTH * 0.3;
     _this2.BACK_ACTIVE_POSITION = _this2.SCREEN_WIDTH * 0.1;
+    _this2.rootElement = firstDivInBody();
     _this2.SIZE = {
       width: window.screen.width,
-      minHeight: window.screen.height
+      minHeight: window.innerHeight
     };
 
     _this2.easeInQuad = function (time, begin, change, duration) {
@@ -1707,17 +1723,17 @@ function (_React$Component2) {
         end: 0,
         ref: _this2.matchRef,
         done: function done(_) {
-          return _this2.matchRef.style.transform = null;
+          //动画结束后重新渲染,设置底部上一页
+          _this2.isRerender = true;
+
+          _this2.forceUpdate();
         }
       });
 
       _this2.animate({
         begin: 0,
         end: _this2.MATCH_SCREEN_OFFSET,
-        ref: _this2.preRef,
-        done: function done(_) {
-          return _this2.preRef.style.display = 'none';
-        }
+        ref: _this2.preRef
       });
     };
 
@@ -1785,7 +1801,7 @@ function (_React$Component2) {
     };
 
     _this2.onTouchStart = function (e) {
-      document.getElementById('root').style.overflow = 'hidden';
+      _this2.rootElement.style.overflow = 'hidden';
       _this2._ScreenX = _this2._startScreenX = e.touches[0].screenX;
       _this2.gestureBackActive = _this2._startScreenX < _this2.BACK_ACTIVE_POSITION;
 
@@ -1834,12 +1850,20 @@ function (_React$Component2) {
         begin: _this2._lastScreenX,
         end: 0,
         ref: _this2.matchRef,
-        done: _this2.hideBottom
+        done: function done(_) {
+          return _this2.preRef.style.opacity = 0;
+        }
+      });
+
+      _this2.animate({
+        begin: _this2.BOTTOM_SCREEN_OFFSET + _this2._lastScreenX * 0.3,
+        end: _this2.BOTTOM_SCREEN_OFFSET,
+        ref: _this2.preRef
       });
     };
 
     _this2.onTouchEnd = function (e) {
-      document.getElementById('root').style.overflow = null; //不是从左侧特定区域开始滑动
+      _this2.rootElement.style.overflow = null; //不是从左侧特定区域开始滑动
 
       if (!_this2.gestureBackActive) {
         return;
@@ -1865,11 +1889,14 @@ function (_React$Component2) {
         });
 
         _this2._lastScreenX = 0;
-        _this2.fromGesture = true;
+        _this2.isRerender = true;
         _this2.gestureBackActive = false;
-      } //滑动小于一半 恢复
+      } //滑动小于一半
       else if (_this2._lastScreenX < _this2.SCREEN_WIDTH / 2) {
-          _this2.reset();
+          //有滑动 恢复(无滑动时,_lastScreenX==0)
+          if (_this2._lastScreenX > 0) {
+            _this2.reset();
+          }
 
           _this2.gestureBackActive = false;
           _this2._lastScreenX = 0;
@@ -1892,13 +1919,13 @@ function (_React$Component2) {
             duration: 0.05
           });
 
-          _this2.fromGesture = true;
+          _this2.isRerender = true;
           _this2.gestureBackActive = false;
           _this2._lastScreenX = 0;
         }
     };
 
-    _this2.renderGesture = function () {
+    _this2.reRender = function () {
       if (_this2.single) {
         return React.createElement("div", {
           ref: function ref(_ref2) {
@@ -1917,6 +1944,7 @@ function (_React$Component2) {
         }, _this2.SIZE, gesture_pre, {
           opacity: 0,
           position: 'fixed',
+          left: 0,
           top: -window.globalPosition[prevLocation.pathname] || 0
         }),
         key: Math.random(),
@@ -1954,15 +1982,12 @@ function (_React$Component2) {
 
     _this2.renderPop = function () {
       if (!_this2.prePage) {
+        _this2.canAnimate = false;
         return React.createElement("div", {
           ref: function ref(_ref5) {
             return _this2.matchRef = _ref5;
           }
         }, _this2.matchPage);
-      }
-
-      if (_this2.fromGesture) {
-        return _this2.renderGesture();
       } //回退碰到了相同页面
 
 
@@ -1984,7 +2009,7 @@ function (_React$Component2) {
         style: _extends({
           transform: "translate3d(" + _this2.BOTTOM_SCREEN_OFFSET + "px,0px,0)"
         }, _this2.SIZE, pop_match),
-        key: Math.random(),
+        key: Math.random().toString(),
         ref: function ref(_ref7) {
           if (_ref7) {
             _ref7.removeEventListener('touchstart', _this2.onTouchStart);
@@ -2003,15 +2028,17 @@ function (_React$Component2) {
           _this2.matchRef = _ref7;
         }
       }, _this2.matchPage), React.createElement("div", {
+        id: "prepage",
         style: _extends({
           transform: "translate3d(0px,0px,0)"
         }, _this2.SIZE, pop_pre, {
           position: 'fixed',
-          top: window.globalPosition ? -window.globalPosition[_this2.prePage.props.path] : 0
+          left: 0,
+          top: -(document.documentElement.scrollTop || document.body.scrollTop)
         }),
-        key: Math.random(),
+        key: Math.random().toString(),
         ref: function ref(_ref8) {
-          return _this2.preRef = _ref8;
+          _this2.preRef = _ref8;
         }
       }, _this2.prePage));
     };
@@ -2019,8 +2046,6 @@ function (_React$Component2) {
     _this2.correctPosition = function (key) {
       window.globalPosition = window.globalPosition || {};
       window.globalPosition[key] = document.documentElement.scrollTop || document.body.scrollTop;
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
       return window.globalPosition[key];
     };
 
@@ -2044,10 +2069,15 @@ function (_React$Component2) {
           transform: "translate3d(0px,0px,0)"
         }, _this2.SIZE, push_pre, {
           position: 'fixed',
+          left: 0,
           top: -window.globalPosition[preLocation.pathname] || 0
         }),
         key: Math.random(),
         ref: function ref(_ref10) {
+          if (_ref10) {
+            _ref10.style.opacity = null;
+          }
+
           return _this2.preRef = _ref10;
         }
       }, _this2.prePage), React.createElement("div", {
@@ -2100,17 +2130,21 @@ function (_React$Component2) {
   var _proto2 = AnimateRoute.prototype;
 
   _proto2.componentDidUpdate = function componentDidUpdate(prevProps, prevState, snapshot) {
-    if (this.canAnimate && !this.fromGesture) {
+    if (this.canAnimate && !this.isRerender) {
       this.action == 'POP' ? this.animatePop() : this.animatePush();
     }
 
-    this.fromGesture = false;
+    this.isRerender = false;
     this.canAnimate = true;
   };
 
   _proto2.render = function render() {
     this.preRender();
-    return this.matchPage ? this.action == 'POP' ? this.renderPop() : this.renderPush() : '404';
+    this.SIZE = {
+      width: window.screen.width,
+      minHeight: window.innerHeight
+    };
+    return this.matchPage ? this.action == 'POP' ? this.isRerender ? this.reRender() : this.renderPop() : this.renderPush() : '404';
   };
 
   return AnimateRoute;
@@ -2159,7 +2193,87 @@ function withRouter(Component) {
   return hoistStatics(C, Component);
 }
 
+/**
+ * The public API for rendering the first <Route> that matches.
+ */
+
+var NormalSwitch =
+/*#__PURE__*/
+function (_React$Component) {
+  _inheritsLoose(NormalSwitch, _React$Component);
+
+  function NormalSwitch() {
+    return _React$Component.apply(this, arguments) || this;
+  }
+
+  var _proto = NormalSwitch.prototype;
+
+  _proto.componentDidMount = function componentDidMount() {
+    document.addEventListener('WinJSBridgeReady', function (_) {
+      window.WinJSBridge.call('webview', 'dragbackenable', {
+        enable: false
+      });
+    });
+  };
+
+  _proto.render = function render() {
+    var _this = this;
+
+    return React.createElement(context.Consumer, null, function (context$$1) {
+      !context$$1 ? invariant(false, 'You should not use <Switch> outside a <Router>') : void 0;
+      var location = _this.props.location || context$$1.location;
+      var element, match; // We use React.Children.forEach instead of React.Children.toArray().find()
+      // here because toArray adds keys to all child elements and we do not want
+      // to trigger an unmount/remount for two <Route>s that render the same
+      // component at different URLs.
+
+      React.Children.forEach(_this.props.children, function (child) {
+        if (match == null && React.isValidElement(child)) {
+          element = child;
+          var path = child.props.path || child.props.from;
+          match = path ? matchPath(location.pathname, _extends({}, child.props, {
+            path: path
+          })) : context$$1.match;
+        }
+      });
+      return match ? React.cloneElement(element, {
+        location: location,
+        computedMatch: match
+      }) : null;
+    });
+  };
+
+  return NormalSwitch;
+}(React.Component);
+
+{
+  NormalSwitch.propTypes = {
+    children: PropTypes.node,
+    location: PropTypes.object
+  };
+
+  NormalSwitch.prototype.componentDidUpdate = function (prevProps) {
+    warning(!(this.props.location && !prevProps.location), '<NormalSwitch> elements should not change from uncontrolled to controlled (or vice versa). You initially used no "location" prop and then provided one on a subsequent render.');
+    warning(!(!this.props.location && prevProps.location), '<NormalSwitch> elements should not change from controlled to uncontrolled (or vice versa). You provided a "location" prop initially but omitted it on a subsequent render.');
+  };
+}
+
+var lte10 = navigator.userAgent.match(/Mac OS/) && navigator.userAgent.match(/os\s+(\d+)/i)[1] - 0 < 10;
 function renderRoutes(routes) {
+  if (lte10) {
+    return React.createElement(reactKeepAlive.Provider, null, React.createElement(NormalSwitch, null, routes.map(function (route, idx) {
+      return React.createElement(Route, _extends({
+        key: idx
+      }, route, {
+        component: function component(props) {
+          return React.createElement(reactKeepAlive.KeepAlive, {
+            name: idx.toString()
+          }, React.createElement("div", null, React.createElement(route.component, props)));
+        }
+      }));
+    })));
+  }
+
   return React.createElement(reactKeepAlive.Provider, null, React.createElement(Switch, null, routes.map(function (route, idx) {
     return React.createElement(Route, _extends({
       key: idx
@@ -2439,6 +2553,7 @@ function NavLink(_ref) {
   });
 }
 
+Object.keys(reactKeepAlive).forEach(function (key) { exports[key] = reactKeepAlive[key]; });
 exports.BrowserRouter = BrowserRouter;
 exports.HashRouter = HashRouter;
 exports.Link = Link;

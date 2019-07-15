@@ -95,7 +95,12 @@ function createBrowserHistory(props = {}) {
         window.globalManger = window.globalManger.slice(0, goNum)
         goNum = null
       } else {
-        window.globalManger.pop()
+
+        //ios9 init pop
+        if (window.globalManger.length !== 1) {
+          window.globalManger.pop()
+        }
+
       }
     }
     Object.assign(history, nextState)
