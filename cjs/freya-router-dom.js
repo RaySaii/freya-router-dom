@@ -12,7 +12,7 @@ var PropTypes = _interopDefault(require('prop-types'));
 var pathToRegexp = _interopDefault(require('path-to-regexp'));
 var reactIs = require('react-is');
 var hoistStatics = _interopDefault(require('hoist-non-react-statics'));
-var reactKeepAlive = require('react-keep-alive');
+var freyaKeepAlive = require('freya-keep-alive');
 
 function _extends() {
   _extends = Object.assign || function (target) {
@@ -1694,16 +1694,20 @@ function (_React$Component2) {
           end = _ref.end,
           ref = _ref.ref,
           done = _ref.done,
-          _ref$type = _ref.type,
-          type = _ref$type === void 0 ? 'ease-in-out' : _ref$type,
           _ref$duration = _ref.duration,
-          duration = _ref$duration === void 0 ? 0.1 : _ref$duration;
-      var factor = type == 'ease-in-out' ? _this2.easeInOut : type == 'ease-in' ? _this2.easeInQuad : type == 'ease-out' ? _this2.easeOutQuad : _this2.easeInOut;
+          duration = _ref$duration === void 0 ? 0.1 : _ref$duration,
+          _ref$left = _ref.left,
+          left = _ref$left === void 0 ? false : _ref$left;
+      var factor = _this2.easeOutQuad;
 
       var loop = function loop(time) {
         var next = factor(time, begin, end - begin, duration);
         requestAnimationFrame(function (_) {
-          ref.style.transform = "translate3d(" + next + "px,0px,0)";
+          if (left) {
+            ref.style.left = next + 'px';
+          } else {
+            ref.style.transform = "translate3d(" + next + "px,0px,0)";
+          }
 
           if (next == end) {
             done && done();
@@ -1722,6 +1726,7 @@ function (_React$Component2) {
         begin: _this2.BOTTOM_SCREEN_OFFSET,
         end: 0,
         ref: _this2.matchRef,
+        left: true,
         done: function done(_) {
           //动画结束后重新渲染,设置底部上一页
           _this2.isRerender = true;
@@ -1733,6 +1738,7 @@ function (_React$Component2) {
       _this2.animate({
         begin: 0,
         end: _this2.MATCH_SCREEN_OFFSET,
+        left: true,
         ref: _this2.preRef
       });
     };
@@ -1743,7 +1749,7 @@ function (_React$Component2) {
         end: 0,
         ref: _this2.matchRef,
         done: function done(_) {
-          return _this2.matchRef.style.transform = null;
+          _this2.matchRef.style.transform = null;
         }
       });
 
@@ -1751,7 +1757,12 @@ function (_React$Component2) {
         begin: 0,
         end: _this2.BOTTOM_SCREEN_OFFSET,
         ref: _this2.preRef,
-        done: _this2.hideBottom
+        left: true,
+        done: function done(_) {
+          _this2.matchRef.style.transform = null;
+
+          _this2.hideBottom();
+        }
       });
     };
 
@@ -1789,7 +1800,7 @@ function (_React$Component2) {
 
     _this2.setBottomTransform = function (translate) {
       var t = _this2.BOTTOM_SCREEN_OFFSET + translate * 0.3;
-      _this2.preRef.style.transform = "translate3d(" + t + "px,0px,0)";
+      _this2.preRef.style.left = t + 'px'; // this.preRef.style.transform = `translate3d(${t}px,0px,0)`
     };
 
     _this2.hideBottom = function () {
@@ -1851,14 +1862,16 @@ function (_React$Component2) {
         end: 0,
         ref: _this2.matchRef,
         done: function done(_) {
-          return _this2.preRef.style.opacity = 0;
+          _this2.matchRef.style.transform = null;
+          _this2.preRef.style.opacity = 0;
         }
       });
 
       _this2.animate({
         begin: _this2.BOTTOM_SCREEN_OFFSET + _this2._lastScreenX * 0.3,
         end: _this2.BOTTOM_SCREEN_OFFSET,
-        ref: _this2.preRef
+        ref: _this2.preRef,
+        left: true
       });
     };
 
@@ -1876,6 +1889,7 @@ function (_React$Component2) {
           begin: _this2.BOTTOM_SCREEN_OFFSET + _this2._lastScreenX * 0.3,
           end: 0,
           ref: _this2.preRef,
+          left: true,
           duration: 0.05
         });
 
@@ -1884,7 +1898,6 @@ function (_React$Component2) {
           end: _this2.SCREEN_WIDTH,
           ref: _this2.matchRef,
           done: _this2.props.adapt.history.goBack,
-          type: 'ease-out',
           duration: 0.05
         });
 
@@ -1906,6 +1919,7 @@ function (_React$Component2) {
             begin: _this2.BOTTOM_SCREEN_OFFSET + _this2._lastScreenX * 0.3,
             end: 0,
             ref: _this2.preRef,
+            left: true,
             duration: 0.05
           }); //将本页划出
 
@@ -1915,7 +1929,6 @@ function (_React$Component2) {
             end: _this2.SCREEN_WIDTH,
             ref: _this2.matchRef,
             done: _this2.props.adapt.history.goBack,
-            type: 'ease-out',
             duration: 0.05
           });
 
@@ -1926,6 +1939,8 @@ function (_React$Component2) {
     };
 
     _this2.reRender = function () {
+      _this2.matchPage.props.changeStatus('activate');
+
       if (_this2.single) {
         return React.createElement("div", {
           ref: function ref(_ref2) {
@@ -1939,12 +1954,10 @@ function (_React$Component2) {
 
       _this2.prePage = _this2.findMatchElementByLocation(prevLocation);
       return React.createElement(React.Fragment, null, React.createElement("div", {
-        style: _extends({
-          transform: "translate3d(" + _this2.BOTTOM_SCREEN_OFFSET + "px,0px,0)"
-        }, _this2.SIZE, gesture_pre, {
+        style: _extends({}, _this2.SIZE, gesture_pre, {
           opacity: 0,
           position: 'fixed',
-          left: 0,
+          left: _this2.BOTTOM_SCREEN_OFFSET,
           top: -window.globalPosition[prevLocation.pathname] || 0
         }),
         key: Math.random(),
@@ -1994,6 +2007,8 @@ function (_React$Component2) {
       if (_this2.prePage.props.path == _this2.matchPage.props.path) {
         //还能回退
         if (window.globalManger.length > 1) {
+          _this2.canAnimate = false;
+
           _this2.props.adapt.history.goBack();
         } else {
           _this2.canAnimate = false;
@@ -2005,10 +2020,13 @@ function (_React$Component2) {
         }
       }
 
+      _this2.prePage.props.changeStatus('unActivate');
+
       return React.createElement(React.Fragment, null, React.createElement("div", {
-        style: _extends({
-          transform: "translate3d(" + _this2.BOTTOM_SCREEN_OFFSET + "px,0px,0)"
-        }, _this2.SIZE, pop_match),
+        style: _extends({}, _this2.SIZE, pop_match, {
+          position: 'relative',
+          left: _this2.BOTTOM_SCREEN_OFFSET
+        }),
         key: Math.random().toString(),
         ref: function ref(_ref7) {
           if (_ref7) {
@@ -2029,9 +2047,7 @@ function (_React$Component2) {
         }
       }, _this2.matchPage), React.createElement("div", {
         id: "prepage",
-        style: _extends({
-          transform: "translate3d(0px,0px,0)"
-        }, _this2.SIZE, pop_pre, {
+        style: _extends({}, _this2.SIZE, pop_pre, {
           position: 'fixed',
           left: 0,
           top: -(document.documentElement.scrollTop || document.body.scrollTop)
@@ -2064,10 +2080,14 @@ function (_React$Component2) {
 
       _this2.correctPosition(preLocation.pathname);
 
+      if (_this2.prePage) {
+        _this2.prePage.props.changeStatus('unActivate');
+      }
+
+      _this2.matchPage.props.changeStatus('activate');
+
       return React.createElement(React.Fragment, null, React.createElement("div", {
-        style: _extends({
-          transform: "translate3d(0px,0px,0)"
-        }, _this2.SIZE, push_pre, {
+        style: _extends({}, _this2.SIZE, push_pre, {
           position: 'fixed',
           left: 0,
           top: -window.globalPosition[preLocation.pathname] || 0
@@ -2108,7 +2128,9 @@ function (_React$Component2) {
 
           _this2.matchRef = _ref11;
         }
-      }, _this2.matchPage));
+      }, React.cloneElement(_this2.matchPage, _extends({}, _this2.matchPage.props, {
+        routerActiveStatus: 'active'
+      }))));
     };
 
     _this2.preRender = function () {
@@ -2261,12 +2283,12 @@ function (_React$Component) {
 var lte10 = navigator.userAgent.match(/Mac OS/) && (navigator.userAgent.match(/os\s+(\d+)/i) ? navigator.userAgent.match(/os\s+(\d+)/i)[1] - 0 < 10 : false);
 function renderRoutes(routes) {
   if (lte10) {
-    return React.createElement(reactKeepAlive.Provider, null, React.createElement(NormalSwitch, null, routes.map(function (route, idx) {
+    return React.createElement(freyaKeepAlive.Provider, null, React.createElement(NormalSwitch, null, routes.map(function (route, idx) {
       return React.createElement(Route, _extends({
         key: idx
       }, route, {
         component: function component(props) {
-          return React.createElement(reactKeepAlive.KeepAlive, {
+          return React.createElement(freyaKeepAlive.KeepAlive, {
             name: idx.toString()
           }, React.createElement("div", null, React.createElement(route.component, props)));
         }
@@ -2274,14 +2296,20 @@ function renderRoutes(routes) {
     })));
   }
 
-  return React.createElement(reactKeepAlive.Provider, null, React.createElement(Switch, null, routes.map(function (route, idx) {
+  return React.createElement(freyaKeepAlive.Provider, null, React.createElement(Switch, null, routes.map(function (route, idx) {
+    var _routerStore = {};
     return React.createElement(Route, _extends({
       key: idx
     }, route, {
+      changeStatus: function changeStatus(st) {
+        return _routerStore.status = st;
+      },
       component: function component(props) {
-        return React.createElement(reactKeepAlive.KeepAlive, {
+        return React.createElement(freyaKeepAlive.KeepAlive, {
           name: idx.toString()
-        }, React.createElement("div", null, React.createElement(route.component, props)));
+        }, React.createElement("div", null, React.createElement(route.component, _extends({
+          _routerStore: _routerStore
+        }, props))));
       }
     }));
   })));
@@ -2553,7 +2581,7 @@ function NavLink(_ref) {
   });
 }
 
-Object.keys(reactKeepAlive).forEach(function (key) { exports[key] = reactKeepAlive[key]; });
+Object.keys(freyaKeepAlive).forEach(function (key) { exports[key] = freyaKeepAlive[key]; });
 exports.BrowserRouter = BrowserRouter;
 exports.HashRouter = HashRouter;
 exports.Link = Link;

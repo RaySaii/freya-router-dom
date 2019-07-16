@@ -1,1 +1,1 @@
-export * from 'react-keep-alive'
+export * from 'freya-keep-alive'
