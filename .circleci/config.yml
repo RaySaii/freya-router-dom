@@ -25,7 +25,7 @@ jobs:
 #          command: npm run test
       - run:
           name: Build
-          command: npm run build:es
+          command: npm run build
       - run:
           name: Auth
           command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
