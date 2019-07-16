@@ -143,7 +143,6 @@ class AnimateRoute extends React.Component {
       begin: this.BOTTOM_SCREEN_OFFSET,
       end: 0,
       ref: this.matchRef,
-      left:true,
       done: _ => {
         //动画结束后重新渲染,设置底部上一页
         this.isRerender = true
@@ -153,7 +152,6 @@ class AnimateRoute extends React.Component {
     this.animate({
       begin: 0,
       end: this.MATCH_SCREEN_OFFSET,
-      left:true,
       ref: this.preRef,
     })
   }
@@ -172,7 +170,6 @@ class AnimateRoute extends React.Component {
       begin: 0,
       end: this.BOTTOM_SCREEN_OFFSET,
       ref: this.preRef,
-      left: true,
       done: _ => {
         this.matchRef.style.transform = null
         this.hideBottom()
@@ -216,8 +213,8 @@ class AnimateRoute extends React.Component {
 
   setBottomTransform = (translate) => {
     const t = this.BOTTOM_SCREEN_OFFSET + translate * 0.3
-    this.preRef.style.left = t + 'px'
-    // this.preRef.style.transform = `translate3d(${t}px,0px,0)`
+    // this.preRef.style.left = t + 'px'
+    this.preRef.style.transform = `translate3d(${t}px,0px,0)`
   }
 
   hideBottom = () => {
@@ -284,7 +281,6 @@ class AnimateRoute extends React.Component {
       begin: this.BOTTOM_SCREEN_OFFSET + this._lastScreenX * 0.3,
       end: this.BOTTOM_SCREEN_OFFSET,
       ref: this.preRef,
-      left: true,
     })
   }
 
@@ -302,7 +298,6 @@ class AnimateRoute extends React.Component {
         begin: this.BOTTOM_SCREEN_OFFSET + this._lastScreenX * 0.3,
         end: 0,
         ref: this.preRef,
-        left: true,
         duration: 0.05,
       })
       this.animate({
@@ -330,7 +325,6 @@ class AnimateRoute extends React.Component {
         begin: this.BOTTOM_SCREEN_OFFSET + this._lastScreenX * 0.3,
         end: 0,
         ref: this.preRef,
-        left: true,
         duration: 0.05,
       })
       //将本页划出
@@ -366,7 +360,7 @@ class AnimateRoute extends React.Component {
         ...gesture_pre,
         opacity: 0,
         position: 'fixed',
-        left: this.BOTTOM_SCREEN_OFFSET,
+        transform: `translate3d(${this.BOTTOM_SCREEN_OFFSET}px,0,0)`,
         top: -window.globalPosition[prevLocation.pathname] || 0,
       }}
            key={Math.random()}
@@ -425,8 +419,8 @@ class AnimateRoute extends React.Component {
           <div style={{
             ...this.SIZE,
             ...pop_match,
-            position: 'relative',
-            left: this.BOTTOM_SCREEN_OFFSET,
+            // left: this.BOTTOM_SCREEN_OFFSET,
+            transform: `transform3d(${this.BOTTOM_SCREEN_OFFSET}px,0,0)`,
           }}
                key={Math.random().toString()}
                ref={ref => {
@@ -442,11 +436,11 @@ class AnimateRoute extends React.Component {
                }}>
             {this.matchPage}
           </div>
-          <div id='prepage' style={{
+          <div style={{
             ...this.SIZE,
             ...pop_pre,
-            position: 'fixed',
-            left: 0,
+            zIndex:1,
+            transform: `transform3d(${this.BOTTOM_SCREEN_OFFSET}px,0,0)`,
             top: -(document.documentElement.scrollTop || document.body.scrollTop),
           }}
                key={Math.random().toString()}
@@ -487,7 +481,7 @@ class AnimateRoute extends React.Component {
     return (
         <>
           <div style={{
-            // transform: `translate3d(0px,0px,0)`,
+            transform: `translate3d(0px,0px,0)`,
             ...this.SIZE,
             ...push_pre,
             position: 'fixed',

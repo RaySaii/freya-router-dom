@@ -1687,7 +1687,6 @@ function (_React$Component2) {
         begin: _this2.BOTTOM_SCREEN_OFFSET,
         end: 0,
         ref: _this2.matchRef,
-        left: true,
         done: function done(_) {
           //动画结束后重新渲染,设置底部上一页
           _this2.isRerender = true;
@@ -1699,7 +1698,6 @@ function (_React$Component2) {
       _this2.animate({
         begin: 0,
         end: _this2.MATCH_SCREEN_OFFSET,
-        left: true,
         ref: _this2.preRef
       });
     };
@@ -1718,7 +1716,6 @@ function (_React$Component2) {
         begin: 0,
         end: _this2.BOTTOM_SCREEN_OFFSET,
         ref: _this2.preRef,
-        left: true,
         done: function done(_) {
           _this2.matchRef.style.transform = null;
 
@@ -1760,8 +1757,9 @@ function (_React$Component2) {
     };
 
     _this2.setBottomTransform = function (translate) {
-      var t = _this2.BOTTOM_SCREEN_OFFSET + translate * 0.3;
-      _this2.preRef.style.left = t + 'px'; // this.preRef.style.transform = `translate3d(${t}px,0px,0)`
+      var t = _this2.BOTTOM_SCREEN_OFFSET + translate * 0.3; // this.preRef.style.left = t + 'px'
+
+      _this2.preRef.style.transform = "translate3d(" + t + "px,0px,0)";
     };
 
     _this2.hideBottom = function () {
@@ -1831,8 +1829,7 @@ function (_React$Component2) {
       _this2.animate({
         begin: _this2.BOTTOM_SCREEN_OFFSET + _this2._lastScreenX * 0.3,
         end: _this2.BOTTOM_SCREEN_OFFSET,
-        ref: _this2.preRef,
-        left: true
+        ref: _this2.preRef
       });
     };
 
@@ -1850,7 +1847,6 @@ function (_React$Component2) {
           begin: _this2.BOTTOM_SCREEN_OFFSET + _this2._lastScreenX * 0.3,
           end: 0,
           ref: _this2.preRef,
-          left: true,
           duration: 0.05
         });
 
@@ -1880,7 +1876,6 @@ function (_React$Component2) {
             begin: _this2.BOTTOM_SCREEN_OFFSET + _this2._lastScreenX * 0.3,
             end: 0,
             ref: _this2.preRef,
-            left: true,
             duration: 0.05
           }); //将本页划出
 
@@ -1918,7 +1913,7 @@ function (_React$Component2) {
         style: _extends({}, _this2.SIZE, gesture_pre, {
           opacity: 0,
           position: 'fixed',
-          left: _this2.BOTTOM_SCREEN_OFFSET,
+          transform: "translate3d(" + _this2.BOTTOM_SCREEN_OFFSET + "px,0,0)",
           top: -window.globalPosition[prevLocation.pathname] || 0
         }),
         key: Math.random(),
@@ -1985,8 +1980,8 @@ function (_React$Component2) {
 
       return React.createElement(React.Fragment, null, React.createElement("div", {
         style: _extends({}, _this2.SIZE, pop_match, {
-          position: 'relative',
-          left: _this2.BOTTOM_SCREEN_OFFSET
+          // left: this.BOTTOM_SCREEN_OFFSET,
+          transform: "transform3d(" + _this2.BOTTOM_SCREEN_OFFSET + "px,0,0)"
         }),
         key: Math.random().toString(),
         ref: function ref(_ref7) {
@@ -2007,10 +2002,9 @@ function (_React$Component2) {
           _this2.matchRef = _ref7;
         }
       }, _this2.matchPage), React.createElement("div", {
-        id: "prepage",
         style: _extends({}, _this2.SIZE, pop_pre, {
-          position: 'fixed',
-          left: 0,
+          zIndex: 1,
+          transform: "transform3d(" + _this2.BOTTOM_SCREEN_OFFSET + "px,0,0)",
           top: -(document.documentElement.scrollTop || document.body.scrollTop)
         }),
         key: Math.random().toString(),
@@ -2048,7 +2042,9 @@ function (_React$Component2) {
       _this2.matchPage.props.changeStatus('activate');
 
       return React.createElement(React.Fragment, null, React.createElement("div", {
-        style: _extends({}, _this2.SIZE, push_pre, {
+        style: _extends({
+          transform: "translate3d(0px,0px,0)"
+        }, _this2.SIZE, push_pre, {
           position: 'fixed',
           left: 0,
           top: -window.globalPosition[preLocation.pathname] || 0
@@ -2251,7 +2247,9 @@ function renderRoutes(routes) {
         component: function component(props) {
           return React.createElement(KeepAlive, {
             name: idx.toString()
-          }, React.createElement("div", null, React.createElement(route.component, props)));
+          }, React.createElement("div", {
+            key: idx.toString()
+          }, React.createElement(route.component, props)));
         }
       }));
     })));
@@ -2268,7 +2266,9 @@ function renderRoutes(routes) {
       component: function component(props) {
         return React.createElement(KeepAlive, {
           name: idx.toString()
-        }, React.createElement("div", null, React.createElement(route.component, _extends({
+        }, React.createElement("div", {
+          key: idx.toString()
+        }, React.createElement(route.component, _extends({
           _routerStore: _routerStore
         }, props))));
       }

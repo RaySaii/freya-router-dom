@@ -15,7 +15,7 @@ export default function renderRoutes(routes) {
           <NormalSwitch>
             {routes.map((route, idx) => <Route key={idx} {...route} component={props =>
                 <KeepAlive name={idx.toString()}>
-                  <div>
+                  <div  key={idx.toString()}>
                     <route.component {...props}/>
                   </div>
                 </KeepAlive>}/>)}
@@ -30,7 +30,7 @@ export default function renderRoutes(routes) {
             let _routerStore = {}
             return <Route key={idx} {...route} changeStatus={st => _routerStore.status = st} component={props => {
               return <KeepAlive name={idx.toString()}>
-                <div>
+                <div key={idx.toString()}>
                   <route.component _routerStore={_routerStore}  {...props}/>
                 </div>
               </KeepAlive>
