@@ -461,6 +461,8 @@ class AnimateRoute extends React.Component {
 
   renderPush = () => {
 
+    console.log("======== window.globalManger =========");
+    console.log(window.globalManger);
     //入口重定向
     if (this.single && this.action == 'REPLACE') {
       this.canAnimate = false
