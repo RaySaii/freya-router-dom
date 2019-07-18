@@ -5,9 +5,10 @@ import warning from 'tiny-warning'
 import RouterContext from './RouterContext'
 import matchPath from './matchPath'
 
+const BACKGROUND = '#f5f5f9'
 
 const push_match = {
-  background: '#fff',
+  background: BACKGROUND,
   boxShadow: '-2px 0 5px rgba(0, 0, 0, .2)',
 }
 
@@ -26,7 +27,7 @@ const gesture_pre = {
 }
 
 const pop_match = {
-  background: '#fff',
+  background: BACKGROUND,
   boxShadow: '-2px 0 5px rgba(0, 0, 0, .2)',
 }
 
@@ -35,7 +36,7 @@ const pop_pre = {
   left: 0,
   top: 0,
   boxShadow: '-2px 0 5px rgba(0, 0, 0, .2)',
-  background: '#fff',
+  background: BACKGROUND,
 }
 
 function firstDivInBody() {
@@ -81,6 +82,7 @@ class AnimateRoute extends React.Component {
   BOTTOM_SCREEN_OFFSET = -this.SCREEN_WIDTH * 0.3
   BACK_ACTIVE_POSITION = this.SCREEN_WIDTH * 0.1
   rootElement = firstDivInBody()
+  cacheList = {}
 
   SIZE = { width: window.screen.width, minHeight: window.innerHeight }
 
@@ -145,6 +147,7 @@ class AnimateRoute extends React.Component {
       ref: this.matchRef,
       done: _ => {
         //动画结束后重新渲染,设置底部上一页
+        this.prePage.props.setCache(false)
         this.isRerender = true
         this.forceUpdate()
       },
@@ -158,12 +161,15 @@ class AnimateRoute extends React.Component {
 
   //prePage <- matchPage <-
   animatePush = () => {
+    this.matchPage.props.setCache(true)
     this.animate({
       begin: this.MATCH_SCREEN_OFFSET,
       end: 0,
       ref: this.matchRef,
       done: _ => {
-        this.matchRef.style.transform = null
+        if(this.matchRef){
+          this.matchRef.style.transform = null
+        }
       },
     })
     this.animate({
@@ -195,10 +201,13 @@ class AnimateRoute extends React.Component {
             : this.props.adapt.match
       }
     })
-    return match ? React.cloneElement(element, {
-      location,
-      computedMatch: match,
-    }) : null
+    return match ? (
+        this.cacheList[location.pathname]
+        || (this.cacheList[location.pathname] = React.cloneElement(element, {
+          location,
+          computedMatch: match,
+        }))
+    ) : null
   }
 
   findMatchElementByLocation = (location) => {
@@ -304,7 +313,10 @@ class AnimateRoute extends React.Component {
         begin: this._lastScreenX,
         end: this.SCREEN_WIDTH,
         ref: this.matchRef,
-        done: this.props.adapt.history.goBack,
+        done: _ => {
+          this.matchPage.props.setCache(false)
+          this.props.adapt.history.goBack()
+        },
         duration: 0.05,
       })
       this._lastScreenX = 0
@@ -332,7 +344,10 @@ class AnimateRoute extends React.Component {
         begin: this._lastScreenX,
         end: this.SCREEN_WIDTH,
         ref: this.matchRef,
-        done: this.props.adapt.history.goBack,
+        done: _ => {
+          this.matchPage.props.setCache(false)
+          this.props.adapt.history.goBack()
+        },
         duration: 0.05,
       })
       this.isRerender = true
@@ -392,7 +407,6 @@ class AnimateRoute extends React.Component {
 
   renderPop = () => {
 
-
     if (!this.prePage) {
       this.canAnimate = false
       return <div ref={ref => this.matchRef = ref}>{this.matchPage}</div>
@@ -410,8 +424,6 @@ class AnimateRoute extends React.Component {
         return <div ref={ref => this.matchRef = ref}>{this.matchPage}</div>
       }
     }
-
-    this.prePage.props.changeStatus('unActivate')
 
 
     return (
@@ -439,7 +451,7 @@ class AnimateRoute extends React.Component {
           <div style={{
             ...this.SIZE,
             ...pop_pre,
-            zIndex:1,
+            zIndex: 1,
             transform: `transform3d(${this.BOTTOM_SCREEN_OFFSET}px,0,0)`,
             top: -(document.documentElement.scrollTop || document.body.scrollTop),
           }}
@@ -456,13 +468,12 @@ class AnimateRoute extends React.Component {
   correctPosition = (key) => {
     window.globalPosition = window.globalPosition || {}
     window.globalPosition[key] = document.documentElement.scrollTop || document.body.scrollTop
+    document.documentElement.scrollTop = document.body.scrollTop = 0
     return window.globalPosition[key]
   }
 
   renderPush = () => {
 
-    console.log("======== window.globalManger =========");
-    console.log(window.globalManger);
     //入口重定向
     if (this.single && this.action == 'REPLACE') {
       this.canAnimate = false
@@ -478,7 +489,6 @@ class AnimateRoute extends React.Component {
     }
 
     this.matchPage.props.changeStatus('activate')
-
 
     return (
         <>

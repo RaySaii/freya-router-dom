@@ -1,5 +1,5 @@
 import Switch from './Switch'
-import React from 'react'
+import React, {useState} from 'react'
 import Route from './Route'
 import {KeepAlive, Provider as KeepAliveProvider} from 'freya-keep-alive'
 import NormalSwitch from './NormalSwitch'
@@ -9,13 +9,14 @@ const lte10 = navigator.userAgent.match(/Mac OS/)
         false)
 
 export default function renderRoutes(routes) {
+
   if (lte10) {
     return (
         <KeepAliveProvider>
           <NormalSwitch>
             {routes.map((route, idx) => <Route key={idx} {...route} component={props =>
                 <KeepAlive name={idx.toString()}>
-                  <div  key={idx.toString()}>
+                  <div>
                     <route.component {...props}/>
                   </div>
                 </KeepAlive>}/>)}
@@ -28,15 +29,44 @@ export default function renderRoutes(routes) {
         <Switch>
           {routes.map((route, idx) => {
             let _routerStore = {}
-            return <Route key={idx} {...route} changeStatus={st => _routerStore.status = st} component={props => {
-              return <KeepAlive name={idx.toString()}>
-                <div key={idx.toString()}>
-                  <route.component _routerStore={_routerStore}  {...props}/>
-                </div>
-              </KeepAlive>
-            }}/>
+            let ref = null
+            return <Route
+                key={idx}
+                {...route}
+                setCache={cache => {
+                  if (ref) {
+                    ref.setCache(cache)
+                  }
+                }}
+                changeStatus={st => _routerStore.status = st}
+                component={props => (
+                    <KeepAlive name={idx.toString()}>
+                      <Wrap ref={_ref => ref = _ref}
+                            component={route.component}
+                            _routerStore={_routerStore}
+                            {...props}/>
+                    </KeepAlive>
+                )}
+            />
           })}
         </Switch>
       </KeepAliveProvider>
   )
+}
+
+class Wrap extends React.PureComponent {
+
+  state = {
+    cache: true,
+  }
+
+  setCache = (cache) => {
+    this.setState({ cache })
+  }
+
+  render() {
+    if (!this.state.cache) return null
+    return <this.props.component {...this.props}/>
+  }
+
 }
