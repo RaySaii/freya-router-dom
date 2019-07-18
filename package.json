@@ -1,6 +1,6 @@
 {
   "name": "freya-router-dom",
-  "version": "5.0.8",
+  "version": "5.0.9",
   "description": "DOM bindings for React Router",
   "files": [
     "BrowserRouter.js",
