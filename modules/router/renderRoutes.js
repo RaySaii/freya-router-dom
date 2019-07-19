@@ -7,19 +7,34 @@ import NormalSwitch from './NormalSwitch'
 const lte10 = navigator.userAgent.match(/Mac OS/)
     && (navigator.userAgent.match(/os\s+(\d+)/i) ? navigator.userAgent.match(/os\s+(\d+)/i)[1] - 0 < 10 :
         false)
-
 export default function renderRoutes(routes) {
 
   if (lte10) {
     return (
         <KeepAliveProvider>
           <NormalSwitch>
-            {routes.map((route, idx) => <Route key={idx} {...route} component={props =>
-                <KeepAlive name={idx.toString()}>
-                  <div>
-                    <route.component {...props}/>
-                  </div>
-                </KeepAlive>}/>)}
+            {routes.map((route, idx) => {
+              let _routerStore = {}
+              let ref = null
+              return <Route
+                  key={idx}
+                  {...route}
+                  setCache={cache => {
+                    if (ref) {
+                      ref.setCache(cache)
+                    }
+                  }}
+                  changeStatus={st => _routerStore.status = st}
+                  component={props => (
+                      <KeepAlive name={idx.toString()}>
+                        <Wrap ref={_ref => ref = _ref}
+                              component={route.component}
+                              _routerStore={_routerStore}
+                              {...props}/>
+                      </KeepAlive>
+                  )}
+              />
+            })}
           </NormalSwitch>
         </KeepAliveProvider>
     )
@@ -54,19 +69,27 @@ export default function renderRoutes(routes) {
   )
 }
 
-class Wrap extends React.PureComponent {
+class Wrap extends React.Component {
 
-  state = {
-    cache: true,
+  cache = true
+
+  getVdom = props => <props.component {...props}/>
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    this.cache = true
   }
 
   setCache = (cache) => {
-    this.setState({ cache })
+    this.cache = cache
+    if (!cache) {
+      this.forceUpdate()
+    }
   }
 
   render() {
-    if (!this.state.cache) return null
-    return <this.props.component {...this.props}/>
+    if (!this.cache) return null
+    this.vdom = this.getVdom(this.props)
+    return this.vdom
   }
 
 }

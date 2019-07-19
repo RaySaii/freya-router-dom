@@ -161,13 +161,14 @@ class AnimateRoute extends React.Component {
 
   //prePage <- matchPage <-
   animatePush = () => {
+    if (!this.matchRef) return
     this.matchPage.props.setCache(true)
     this.animate({
       begin: this.MATCH_SCREEN_OFFSET,
       end: 0,
       ref: this.matchRef,
       done: _ => {
-        if(this.matchRef){
+        if (this.matchRef) {
           this.matchRef.style.transform = null
         }
       },
@@ -281,7 +282,10 @@ class AnimateRoute extends React.Component {
 
   reset = () => {
     this.animate({
-      begin: this._lastScreenX, end: 0, ref: this.matchRef, done: _ => {
+      begin: this._lastScreenX,
+      end: 0,
+      ref: this.matchRef,
+      done: _ => {
         this.matchRef.style.transform = null
         this.preRef.style.opacity = 0
       },

@@ -10,11 +10,43 @@ import invariant from 'tiny-invariant'
  * The public API for rendering the first <Route> that matches.
  */
 export default class NormalSwitch extends React.Component {
+  cacheList = {}
 
   componentDidMount() {
     document.addEventListener('WinJSBridgeReady', _ => {
       window.WinJSBridge.call('webview', 'dragbackenable', { enable: false })
     })
+  }
+
+  findMatchElement = (location) => {
+    // We use React.Children.forEach instead of React.Children.toArray().find()
+    // here because toArray adds keys to all child elements and we do not want
+    // to trigger an unmount/remount for two <Route>s that render the same
+    // component at different URLs.
+    let element, match
+    React.Children.forEach(this.props.children, child => {
+      if (match == null && React.isValidElement(child)) {
+        element = child
+
+        const path = child.props.path || child.props.from
+        match = path
+            ? matchPath(location.pathname, { ...child.props, path })
+            : this.props.adapt.match
+      }
+    })
+    return match ? (
+        this.cacheList[location.pathname]
+        || (this.cacheList[location.pathname] = React.cloneElement(element, {
+          location,
+          computedMatch: match,
+        }))
+    ) : null
+  }
+
+  preRender = (context) => {
+    this.action = context.history.action
+    this.prePage = this.matchPage
+    this.matchPage = this.findMatchElement(context.location)
   }
 
   render() {
@@ -23,29 +55,22 @@ export default class NormalSwitch extends React.Component {
           {context => {
             invariant(context, 'You should not use <Switch> outside a <Router>')
 
-            const location = this.props.location || context.location
+            this.preRender(context)
 
-            let element, match
-
-            // We use React.Children.forEach instead of React.Children.toArray().find()
-            // here because toArray adds keys to all child elements and we do not want
-            // to trigger an unmount/remount for two <Route>s that render the same
-            // component at different URLs.
-            React.Children.forEach(this.props.children, child => {
-              if (match == null && React.isValidElement(child)) {
-                element = child
-
-                const path = child.props.path || child.props.from
-
-                match = path
-                    ? matchPath(location.pathname, { ...child.props, path })
-                    : context.match
+            if (this.action == 'PUSH') {
+              this.matchPage.props.setCache(true)
+              document.body.scrollTop = document.documentElement.scrollTop = 0
+            } else {
+              if (this.prePage && this.prePage !== this.matchPage) {
+                this.prePage.props.setCache(false)
               }
-            })
+            }
+            if (this.prePage && this.prePage !== this.matchPage) {
+              this.prePage.props.changeStatus('unActivate')
+            }
+            this.matchPage.props.changeStatus('activate')
 
-            return match
-                ? React.cloneElement(element, { location, computedMatch: match })
-                : null
+            return this.matchPage
           }}
         </RouterContext.Consumer>
     )
