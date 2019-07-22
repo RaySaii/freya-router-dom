@@ -477,7 +477,6 @@ class AnimateRoute extends React.Component {
   }
 
   renderPush = () => {
-
     //入口重定向
     if (this.single && this.action == 'REPLACE') {
       this.canAnimate = false
@@ -552,7 +551,7 @@ class AnimateRoute extends React.Component {
 
   render() {
     this.preRender()
-    this.SIZE = { width: window.screen.width, minHeight: window.innerHeight }
+    this.SIZE = { width: window.innerWidth, minHeight: window.innerHeight }
     return this.matchPage ?
         this.action == 'POP' ?
             this.isRerender ? this.reRender() : this.renderPop()

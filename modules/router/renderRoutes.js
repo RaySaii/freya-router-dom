@@ -75,6 +75,10 @@ class Wrap extends React.Component {
 
   getVdom = props => <props.component {...props}/>
 
+  // shouldComponentUpdate(nextProps, nextState, nextContext) {
+  //   return !this.animating
+  // }
+
   componentDidUpdate(prevProps, prevState, snapshot) {
     this.cache = true
   }
