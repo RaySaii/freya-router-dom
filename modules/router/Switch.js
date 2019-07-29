@@ -32,7 +32,7 @@ const pop_match = {
 }
 
 const pop_pre = {
-  position: 'absolute',
+  position: 'fixed',
   left: 0,
   top: 0,
   boxShadow: '-2px 0 5px rgba(0, 0, 0, .2)',
@@ -428,7 +428,6 @@ class AnimateRoute extends React.Component {
         return <div ref={ref => this.matchRef = ref}>{this.matchPage}</div>
       }
     }
-
 
     return (
         <>
