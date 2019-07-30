@@ -13,17 +13,9 @@ const push_match = {
 }
 
 const push_pre = {
-  zIndex: -1,
-  position: 'absolute',
-  left: 0,
-  top: 0,
 }
 
 const gesture_pre = {
-  zIndex: -1,
-  position: 'absolute',
-  left: 0,
-  top: 0,
 }
 
 const pop_match = {
@@ -83,6 +75,8 @@ class AnimateRoute extends React.Component {
   BACK_ACTIVE_POSITION = this.SCREEN_WIDTH * 0.1
   rootElement = firstDivInBody()
   cacheList = {}
+  //切换动画中
+  animating = false
 
   SIZE = { width: window.screen.width, minHeight: window.innerHeight }
 
@@ -141,11 +135,14 @@ class AnimateRoute extends React.Component {
 
   //matchPage -> prePage ->
   animatePop = () => {
+    if (this.animating) return
+    this.animating = true
     this.animate({
       begin: this.BOTTOM_SCREEN_OFFSET,
       end: 0,
       ref: this.matchRef,
       done: _ => {
+        this.animating = false
         //动画结束后重新渲染,设置底部上一页
         this.prePage.props.setCache(false)
         this.isRerender = true
@@ -161,13 +158,15 @@ class AnimateRoute extends React.Component {
 
   //prePage <- matchPage <-
   animatePush = () => {
-    if (!this.matchRef) return
+    if (!this.matchRef || this.animating) return
+    this.animating = true
     this.matchPage.props.setCache(true)
     this.animate({
       begin: this.MATCH_SCREEN_OFFSET,
       end: 0,
       ref: this.matchRef,
       done: _ => {
+        this.animating = false
         if (this.matchRef) {
           this.matchRef.style.transform = null
         }
@@ -178,6 +177,7 @@ class AnimateRoute extends React.Component {
       end: this.BOTTOM_SCREEN_OFFSET,
       ref: this.preRef,
       done: _ => {
+        this.animating = false
         this.matchRef.style.transform = null
         this.hideBottom()
       },
@@ -365,7 +365,7 @@ class AnimateRoute extends React.Component {
     this.matchPage.props.changeStatus('activate')
 
     if (this.single) {
-      return <div ref={ref => this.preRef = this.matchRef = ref}>{this.matchPage}</div>
+      return this.matchPage
     }
 
     //找到本页面上一个页面的path
@@ -376,7 +376,6 @@ class AnimateRoute extends React.Component {
     return <>
       <div style={{
         ...this.SIZE,
-        ...gesture_pre,
         opacity: 0,
         position: 'fixed',
         transform: `translate3d(${this.BOTTOM_SCREEN_OFFSET}px,0,0)`,
@@ -413,7 +412,7 @@ class AnimateRoute extends React.Component {
 
     if (!this.prePage) {
       this.canAnimate = false
-      return <div ref={ref => this.matchRef = ref}>{this.matchPage}</div>
+      return this.matchPage
     }
 
 
@@ -425,7 +424,7 @@ class AnimateRoute extends React.Component {
         this.props.adapt.history.goBack()
       } else {
         this.canAnimate = false
-        return <div ref={ref => this.matchRef = ref}>{this.matchPage}</div>
+        return this.matchPage
       }
     }
 
@@ -497,7 +496,6 @@ class AnimateRoute extends React.Component {
           <div style={{
             transform: `translate3d(0px,0px,0)`,
             ...this.SIZE,
-            ...push_pre,
             position: 'fixed',
             left: 0,
             top: -window.globalPosition[preLocation.pathname] || 0,
