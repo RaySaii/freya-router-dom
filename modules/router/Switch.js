@@ -236,7 +236,6 @@ class AnimateRoute extends React.Component {
   }
 
   onTouchStart = (e) => {
-    this.rootElement.style.overflow = 'hidden'
     this._ScreenX = this._startScreenX = e.touches[0].screenX
     this.gestureBackActive = this._startScreenX < this.BACK_ACTIVE_POSITION
     if (!this.gestureBackActive) {
@@ -253,7 +252,7 @@ class AnimateRoute extends React.Component {
     if (!this.gestureBackActive) {
       return
     }
-
+    this.rootElement.style.overflow = 'hidden'
     // 使用 pageX 对比有问题
     const _screenX = e.touches[0].screenX
 
@@ -378,6 +377,7 @@ class AnimateRoute extends React.Component {
         ...this.SIZE,
         opacity: 0,
         position: 'fixed',
+        zIndex:-1,
         transform: `translate3d(${this.BOTTOM_SCREEN_OFFSET}px,0,0)`,
         top: -window.globalPosition[prevLocation.pathname] || 0,
       }}
@@ -387,7 +387,7 @@ class AnimateRoute extends React.Component {
            }}>
         {this.prePage}
       </div>
-      <div style={{ ...this.SIZE, ...pop_match }}
+      <div style={{ ...this.SIZE, ...pop_match,zIndex:1 }}
            key={Math.random()}
            ref={ref => {
              if (ref) {
@@ -433,6 +433,7 @@ class AnimateRoute extends React.Component {
           <div style={{
             ...this.SIZE,
             ...pop_match,
+            zIndex:-1,
             // left: this.BOTTOM_SCREEN_OFFSET,
             transform: `transform3d(${this.BOTTOM_SCREEN_OFFSET}px,0,0)`,
           }}
@@ -453,7 +454,6 @@ class AnimateRoute extends React.Component {
           <div style={{
             ...this.SIZE,
             ...pop_pre,
-            zIndex: 1,
             transform: `transform3d(${this.BOTTOM_SCREEN_OFFSET}px,0,0)`,
             top: -(document.documentElement.scrollTop || document.body.scrollTop),
           }}
@@ -491,6 +491,7 @@ class AnimateRoute extends React.Component {
 
     this.matchPage.props.changeStatus('activate')
 
+
     return (
         <>
           <div style={{
@@ -498,6 +499,7 @@ class AnimateRoute extends React.Component {
             ...this.SIZE,
             position: 'fixed',
             left: 0,
+            zIndex:-1,
             top: -window.globalPosition[preLocation.pathname] || 0,
           }}
                key={Math.random()}
@@ -513,6 +515,7 @@ class AnimateRoute extends React.Component {
             transform: `translate3d(${this.MATCH_SCREEN_OFFSET}px,0px,0)`,
             ...this.SIZE,
             ...push_match,
+            zIndex:1
           }}
                key={Math.random()}
                ref={ref => {
