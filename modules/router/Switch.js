@@ -387,7 +387,7 @@ class AnimateRoute extends React.Component {
            }}>
         {this.prePage}
       </div>
-      <div style={{ ...this.SIZE, ...pop_match,zIndex:1 }}
+      <div style={{ ...this.SIZE, ...pop_match }}
            key={Math.random()}
            ref={ref => {
              if (ref) {
@@ -512,7 +512,6 @@ class AnimateRoute extends React.Component {
             transform: `translate3d(${this.MATCH_SCREEN_OFFSET}px,0px,0)`,
             ...this.SIZE,
             ...push_match,
-            zIndex:1
           }}
                key={Math.random()}
                ref={ref => {
