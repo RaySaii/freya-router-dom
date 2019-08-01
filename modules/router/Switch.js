@@ -397,9 +397,6 @@ class AnimateRoute extends React.Component {
                ref.addEventListener('touchstart', this.onTouchStart)
                ref.addEventListener('touchmove', this.onTouchMove)
                ref.addEventListener('touchend', this.onTouchEnd)
-               ref.addEventListener('touchstart', this.onTouchStart)
-               ref.addEventListener('touchmove', this.onTouchMove)
-               ref.addEventListener('touchend', this.onTouchEnd)
              }
              this.matchRef = ref
            }}>
@@ -523,9 +520,6 @@ class AnimateRoute extends React.Component {
                    ref.removeEventListener('touchstart', this.onTouchStart)
                    ref.removeEventListener('touchmove', this.onTouchMove)
                    ref.removeEventListener('touchend', this.onTouchEnd)
-                   ref.addEventListener('touchstart', this.onTouchStart)
-                   ref.addEventListener('touchmove', this.onTouchMove)
-                   ref.addEventListener('touchend', this.onTouchEnd)
                    ref.addEventListener('touchstart', this.onTouchStart)
                    ref.addEventListener('touchmove', this.onTouchMove)
                    ref.addEventListener('touchend', this.onTouchEnd)
