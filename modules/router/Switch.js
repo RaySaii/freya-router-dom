@@ -61,6 +61,8 @@ class AnimateRoute extends React.Component {
 
     //在pop或者手势后重新渲染,设置底部上一页
     isRerender = false
+    //来自于手势的后退
+    fromGesture = false
     prePage = null
     matchPage = null
     action = ''
@@ -85,7 +87,6 @@ class AnimateRoute extends React.Component {
         this.isRerender = false
         this.canAnimate = true
     }
-
 
     easeInQuad = (time, begin, change, duration) => {
         const x = time / duration //x值
@@ -316,6 +317,7 @@ class AnimateRoute extends React.Component {
                 ref: this.matchRef,
                 done: _ => {
                     this.matchPage.props.setCache(false)
+                    this.fromGesture = true
                     this.props.adapt.history.goBack()
                 },
                 duration: 0.05,
@@ -347,6 +349,7 @@ class AnimateRoute extends React.Component {
                 ref: this.matchRef,
                 done: _ => {
                     this.matchPage.props.setCache(false)
+                    this.fromGesture = true
                     this.props.adapt.history.goBack()
                 },
                 duration: 0.05,
@@ -359,10 +362,12 @@ class AnimateRoute extends React.Component {
 
     reRender = () => {
 
+        this.revertScrollTop()
+
         this.matchPage.props.changeStatus('activate')
 
         if (this.single) {
-            return this.matchPage
+            return <div ref={ref => this.preRef = this.matchRef = ref}>{this.matchPage}</div>
         }
 
         //找到本页面上一个页面的path
@@ -385,7 +390,7 @@ class AnimateRoute extends React.Component {
                  }}>
                 {this.prePage}
             </div>
-            <div style={{ ...this.SIZE, ...pop_match, zIndex: 1 }}
+            <div style={{ ...this.SIZE, ...pop_match }}
                  key={Math.random()}
                  ref={ref => {
                      if (ref) {
@@ -403,7 +408,19 @@ class AnimateRoute extends React.Component {
         </>
     }
 
+    //个别安卓机不能回复滚动位置
+    revertScrollTop = () => {
+        const currentLocation = window.globalManger[window.globalManger.length - 1]
+        if (currentLocation && currentLocation.pathname && window.globalPosition) {
+            Promise.resolve().then(_ => {
+                document.body.scrollTop = document.documentElement.scrollTop = window.globalPosition[currentLocation.pathname]
+            })
+        }
+    }
+
     renderPop = () => {
+
+        this.revertScrollTop()
 
         if (!this.prePage) {
             this.canAnimate = false
@@ -422,6 +439,7 @@ class AnimateRoute extends React.Component {
                 return this.matchPage
             }
         }
+
 
         return (
             <>
@@ -473,13 +491,14 @@ class AnimateRoute extends React.Component {
         //入口重定向
         if (this.single && this.action == 'REPLACE') {
             this.canAnimate = false
-            return <div ref={ref => this.preRef = this.matchRef = ref}>{this.matchPage}</div>
+            return this.matchPage
         }
 
 
         const preLocation = window.globalManger[window.globalManger.length - 2]
 
         this.correctPosition(preLocation.pathname)
+
         if (this.prePage) {
             this.prePage.props.changeStatus('unActivate')
         }
@@ -510,7 +529,6 @@ class AnimateRoute extends React.Component {
                     transform: `translate3d(${this.MATCH_SCREEN_OFFSET}px,0px,0)`,
                     ...this.SIZE,
                     ...push_match,
-                    zIndex: 1,
                 }}
                      key={Math.random()}
                      ref={ref => {
@@ -531,8 +549,6 @@ class AnimateRoute extends React.Component {
     }
 
     preRender = () => {
-        console.log("======== this.props.adapt =========");
-        console.log(this.props.adapt);
         this.action = this.props.adapt.history.action
         this.single = window.globalManger.length == 1
         document.addEventListener('WinJSBridgeReady', _ => {
