@@ -81,6 +81,20 @@ class Switch extends React.Component {
         return this.canUpdate
     }
 
+    componentDidMount() {
+        const id = getId(this.context.location.pathname, true)
+        this.vdom = [
+            <div key={id}
+                 ref={ref => this.refArr[0] = ref}>
+                {this.findMatchElementByLocation(this.context.location, id)}
+            </div>,
+        ]
+        this.canUpdate = true
+        this.setState({}, _ => {
+            this.dispatchActivate(id)
+            this.canUpdate = false
+        })
+    }
 
     //leftPage -> rightPage ->
     animatePop = (done) => {
@@ -322,7 +336,7 @@ class Switch extends React.Component {
 
     recordPosition = () => {
         window.globalPosition = window.globalPosition || []
-        window.globalPosition.push( document.documentElement.scrollTop || document.body.scrollTop)
+        window.globalPosition.push(document.documentElement.scrollTop || document.body.scrollTop)
     }
 
     transitionPage = (currentContext, nextContext) => {
@@ -499,6 +513,7 @@ class Switch extends React.Component {
             this.canUpdate = true
             this.setState({}, _ => {
                 this.canUpdate = false
+                this.dispatchActivate(id)
             })
             return
         }
@@ -551,16 +566,8 @@ class Switch extends React.Component {
 
 
     render() {
-        return this.vdom || (
-            this.vdom = [
-                <div key={getId(this.context.location.pathname, true)}
-                     ref={ref => this.refArr[0] = ref}>
-                    {this.findMatchElementByLocation(this.context.location, getId(this.context.location.pathname))}
-                </div>,
-            ]
-        )
+        return this.vdom
     }
-
 }
 
 if (__DEV__) {

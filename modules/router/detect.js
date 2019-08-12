@@ -51,6 +51,7 @@ export function useDetect(activate) {
         }
     }
     useEffect(_ => {
+        unActivate = activate()
         window.addEventListener(id, lifecycleHandle)
         return _ => window.removeEventListener(id, lifecycleHandle)
     }, [])
