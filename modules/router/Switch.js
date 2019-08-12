@@ -355,8 +355,8 @@ class Switch extends React.Component {
 
     setPrePageWhenPush = (ref) => {
         ref.style.cssText = `
-            width: 100vw;
-                    min-height:100vh;
+            width: ${window.innerWidth}px;
+                min-height: ${window.innerHeight}px;
                     position: fixed;
                     left: 0;
                     z-index: -1;
@@ -366,8 +366,8 @@ class Switch extends React.Component {
 
     setNextPageWhenPush = (ref) => {
         ref.style.cssText = `
-                            width: 100vw;
-                            min-height: 100vh;
+                            width: ${window.innerWidth}px;
+                min-height: ${window.innerHeight}px;
                             transform: translate3d(${this.SCREEN_WIDTH}px,0px,0);
                             background: ${BACK_GROUND};
                             box-shadow: ${BOX_SHADOW};
@@ -463,8 +463,8 @@ class Switch extends React.Component {
 
     setPrePageWhenPop = (ref) => {
         ref.style.cssText = `
-                width: 100vw;
-                minHeight: 100vh;
+                width: ${window.innerWidth}px;
+                min-height: ${window.innerHeight}px;
                 background: ${BACK_GROUND};
                 z-index: -1;
                 opacity: null;
