@@ -31,7 +31,7 @@ export default class NormalSwitch extends React.Component {
         const path = child.props.path || child.props.from
         match = path
             ? matchPath(location.pathname, { ...child.props, path })
-            : this.props.adapt.match
+            : this.props.match
       }
     })
     return match ? (

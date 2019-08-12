@@ -1,35 +1,17 @@
-import React from 'react'
+import React, {useEffect} from 'react'
 import PropTypes from 'prop-types'
 import warning from 'tiny-warning'
 
 import RouterContext from './RouterContext'
 import matchPath from './matchPath'
+import {ACTIVATE, UN_ACTIVATE} from './detect'
+import {animate} from './animate'
 
-const BACKGROUND = '#f5f5f9'
-
-const push_match = {
-    background: BACKGROUND,
-    boxShadow: '-2px 0 5px rgba(0, 0, 0, .2)',
-}
-
-const push_pre = {}
-
-const gesture_pre = {}
-
-const pop_match = {
-    background: BACKGROUND,
-    boxShadow: '-2px 0 5px rgba(0, 0, 0, .2)',
-}
-
-const pop_pre = {
-    position: 'fixed',
-    left: 0,
-    top: 0,
-    boxShadow: '-2px 0 5px rgba(0, 0, 0, .2)',
-    background: BACKGROUND,
-}
+const BACK_GROUND = '#f5f5f9'
+const BOX_SHADOW = '-3px 0 8px rgba(0, 0, 0, .2)'
 
 function firstDivInBody() {
+    return document.getElementById('root')
     const children = document.body.children
     for (let i = 0; i < children.length; i++) {
         if (children[i].tagName == 'DIV') {
@@ -38,153 +20,113 @@ function firstDivInBody() {
     }
 }
 
+export const IdContext = React.createContext('')
 
-/**
- * The public API for rendering the first <Route> that matches.
- */
-class Switch extends React.Component {
-
-    render() {
-        return (
-            <RouterContext.Consumer>
-                {context => <AnimateRoute {...this.props} adapt={context}/>}
-            </RouterContext.Consumer>
-        )
-    }
-}
 
 const isWebView = typeof navigator !== 'undefined' &&
     /(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/i.test(navigator.userAgent)
 
 
-class AnimateRoute extends React.Component {
+let PAGE_ID = {}
 
-    //在pop或者手势后重新渲染,设置底部上一页
-    isRerender = false
+const getId = (pathname, isNewId) => {
+    return pathname + (
+        PAGE_ID[pathname]
+            ? isNewId ? ++PAGE_ID[pathname] : PAGE_ID[pathname]
+            : (PAGE_ID[pathname] = 1)
+    )
+}
+
+const deleteId = pathname => {
+    PAGE_ID[pathname] -= 1
+}
+
+const clearId = _ => {
+    PAGE_ID = {}
+}
+
+class Switch extends React.Component {
+
+
+    static contextType = RouterContext
+
     //来自于手势的后退
     fromGesture = false
-    prePage = null
-    matchPage = null
     action = ''
-    canAnimate = true
     //只有一页
     single = true
     SCREEN_WIDTH = window.innerWidth
-    MATCH_SCREEN_OFFSET = this.SCREEN_WIDTH
     BOTTOM_SCREEN_OFFSET = -this.SCREEN_WIDTH * 0.3
     BACK_ACTIVE_POSITION = this.SCREEN_WIDTH * 0.1
     rootElement = firstDivInBody()
     cacheList = {}
     //切换动画中
     animating = false
+    //是否能更新
+    canUpdate = false
 
-    SIZE = { width: window.screen.width, minHeight: window.innerHeight }
+    vdom = null
 
-    componentDidUpdate(prevProps, prevState, snapshot) {
-        if (this.canAnimate && !this.isRerender) {
-            this.action == 'POP' ? this.animatePop() : this.animatePush()
-        }
-        this.isRerender = false
-        this.canAnimate = true
-    }
+    refArr = []
 
-    easeInQuad = (time, begin, change, duration) => {
-        const x = time / duration //x值
-        const y = x * x //y值
-        return begin + change * y //套入最初的公式
-    }
 
-    easeOutQuad = (time, begin, change, duration) => {
-        const x = time / duration         //x值
-        const y = -x * x + 2 * x  //y值
-        return begin + change * y        //套入最初的公式
-    }
-
-    easeInOut = (time, begin, change, duration) => {
-        if (time < duration / 2) { //前半段时间
-            return this.easeInQuad(time, begin, change / 2, duration / 2)//改变量和时间都除以2
-        } else {
-            const t1 = time - duration / 2 //注意时间要减去前半段时间
-            const b1 = begin + change / 2//初始量要加上前半段已经完成的
-            return this.easeOutQuad(t1, b1, change / 2, duration / 2)//改变量和时间都除以2
+    componentWillReceiveProps(nextProps, nextContext) {
+        if (nextContext.location.pathname != this.context.location.pathname) {
+            const currentContext = this.context
+            Promise.resolve().then(_ => this.transitionPage(currentContext, nextContext))
         }
     }
 
-    animate = ({ begin, end, ref, done, duration = 0.1, left = false }) => {
-
-        const factor = this.easeOutQuad
-
-        const loop = (time) => {
-            const next = factor(time, begin, end - begin, duration)
-            requestAnimationFrame(_ => {
-                if (left) {
-                    ref.style.left = next + 'px'
-                } else {
-                    ref.style.transform = `translate3d(${next}px,0px,0)`
-                }
-                if (next == end) {
-                    done && done()
-                    return
-                }
-                loop(time + 0.01)
-            })
-        }
-        loop(0)
+    shouldComponentUpdate(nextProps, nextState, nextContext) {
+        return this.canUpdate
     }
 
-    //matchPage -> prePage ->
-    animatePop = () => {
+
+    //leftPage -> rightPage ->
+    animatePop = (done) => {
         if (this.animating) return
         this.animating = true
-        this.animate({
+        animate({
             begin: this.BOTTOM_SCREEN_OFFSET,
             end: 0,
-            ref: this.matchRef,
+            ref: this.refArr[this.refArr.length - 2],
             done: _ => {
                 this.animating = false
                 //动画结束后重新渲染,设置底部上一页
-                this.prePage.props.setCache(false)
-                this.isRerender = true
-                this.forceUpdate()
+                done && done()
             },
         })
-        this.animate({
+        animate({
             begin: 0,
-            end: this.MATCH_SCREEN_OFFSET,
-            ref: this.preRef,
+            end: this.SCREEN_WIDTH,
+            ref: this.refArr[this.refArr.length - 1],
         })
     }
 
-    //prePage <- matchPage <-
-    animatePush = () => {
-        if (!this.matchRef || this.animating) return
+    //leftPage <- rightPage <-
+    animatePush = (done) => {
+        if (this.animating) return
         this.animating = true
-        this.matchPage.props.setCache(true)
-        this.animate({
-            begin: this.MATCH_SCREEN_OFFSET,
+        animate({
+            begin: this.SCREEN_WIDTH,
             end: 0,
-            ref: this.matchRef,
-            done: _ => {
-                this.animating = false
-                if (this.matchRef) {
-                    this.matchRef.style.transform = null
-                }
-            },
+            ref: this.refArr[this.refArr.length - 1],
         })
-        this.animate({
-            begin: 0,
-            end: this.BOTTOM_SCREEN_OFFSET,
-            ref: this.preRef,
-            done: _ => {
-                this.animating = false
-                this.matchRef.style.transform = null
-                this.hideBottom()
-            },
-        })
+        setTimeout(_ => {
+            animate({
+                begin: 0,
+                end: this.BOTTOM_SCREEN_OFFSET,
+                ref: this.refArr[this.refArr.length - 2],
+                done: _ => {
+                    done && done()
+                    this.animating = false
+                },
+            })
+        }, 100)
     }
 
 
-    findMatchElement = (location) => {
+    findMatchElement = (location, id) => {
         // We use React.Children.forEach instead of React.Children.toArray().find()
         // here because toArray adds keys to all child elements and we do not want
         // to trigger an unmount/remount for two <Route>s that render the same
@@ -194,44 +136,56 @@ class AnimateRoute extends React.Component {
         React.Children.forEach(this.props.children, child => {
             if (match == null && React.isValidElement(child)) {
                 element = child
-
                 const path = child.props.path || child.props.from
                 match = path
                     ? matchPath(location.pathname, { ...child.props, path })
-                    : this.props.adapt.match
+                    : this.props.match
             }
         })
-        return match ? (
-            this.cacheList[location.pathname]
-            || (this.cacheList[location.pathname] = React.cloneElement(element, {
+        if (match) {
+            if (id) {
+                return <IdContext.Provider value={id}>
+                    {React.cloneElement(element, {
+                        location,
+                        computedMatch: match,
+                    })}
+                </IdContext.Provider>
+            }
+            return React.cloneElement(element, {
                 location,
                 computedMatch: match,
-            }))
-        ) : null
+            })
+        }
+        return null
     }
 
-    findMatchElementByLocation = (location) => {
-        return this.findMatchElement(location)
+    findMatchElementByLocation = (location, id) => {
+        if (!location) return null
+        return this.findMatchElement(location, id)
     }
 
     // 页面平移
     setTransform = (translate) => {
-        this.matchRef.style.transform = `translate3d(${translate}px,0px,0)`
+        const last = this.refArr[this.refArr.length - 1]
+        last.style.transform = `translate3d(${translate}px,0px,0)`
         this.setBottomTransform(translate)
     }
 
     setBottomTransform = (translate) => {
+        const prev = this.refArr[this.refArr.length - 2]
         const t = this.BOTTOM_SCREEN_OFFSET + translate * 0.3
         // this.preRef.style.left = t + 'px'
-        this.preRef.style.transform = `translate3d(${t}px,0px,0)`
+        prev.style.transform = `translate3d(${t}px,0px,0)`
     }
 
     hideBottom = () => {
-        this.preRef.style.opacity = 0
+        const prev = this.refArr[this.refArr.length - 2]
+        prev.style.opacity = 0
     }
 
     showBottom = () => {
-        this.preRef.style.opacity = null
+        const prev = this.refArr[this.refArr.length - 2]
+        prev.style.opacity = null
     }
 
     onTouchStart = (e) => {
@@ -245,13 +199,22 @@ class AnimateRoute extends React.Component {
         this.startTime = +new Date()
     }
 
+    setCurrent = () => {
+        const last = this.refArr[this.refArr.length - 1]
+        last.style.boxShadow = BOX_SHADOW
+    }
+
+    restCurrent = () => {
+        const last = this.refArr[this.refArr.length - 1]
+        last.style.boxShadow = null
+    }
 
     onTouchMove = (e) => {
 
         if (!this.gestureBackActive) {
             return
         }
-        this.rootElement.style.overflow = 'hidden'
+        // this.rootElement.style.overflow = 'hidden'
         // 使用 pageX 对比有问题
         const _screenX = e.touches[0].screenX
 
@@ -262,13 +225,14 @@ class AnimateRoute extends React.Component {
         e.preventDefault()
         // add stopPropagation with fastclick will trigger content onClick event. why?
         // ref https://github.com/ant-design/ant-design-mobile/issues/2141
-        // e.stopPropagation();
+        // e.stopPropagation()
+
 
         const _diff = Math.round(_screenX - this._ScreenX)
         this._ScreenX = _screenX
         this._lastScreenX += _diff
 
-
+        this.setCurrent()
         this.setTransform(this._lastScreenX)
 
         // https://github.com/ant-design/ant-design-mobile/issues/573#issuecomment-339560829
@@ -279,19 +243,43 @@ class AnimateRoute extends React.Component {
     }
 
     reset = () => {
-        this.animate({
+        const last = this.refArr[this.refArr.length - 1]
+        const prev = this.refArr[this.refArr.length - 2]
+        animate({
             begin: this._lastScreenX,
             end: 0,
-            ref: this.matchRef,
+            ref: last,
             done: _ => {
-                this.matchRef.style.transform = null
-                this.preRef.style.opacity = 0
+                last.style.transform = null
+                this.hideBottom()
+                this.restCurrent()
             },
         })
-        this.animate({
+        animate({
             begin: this.BOTTOM_SCREEN_OFFSET + this._lastScreenX * 0.3,
             end: this.BOTTOM_SCREEN_OFFSET,
-            ref: this.preRef,
+            ref: prev,
+        })
+    }
+
+    goPrevPage = () => {
+        const last = this.refArr[this.refArr.length - 1]
+        const prev = this.refArr[this.refArr.length - 2]
+        animate({
+            begin: this.BOTTOM_SCREEN_OFFSET + this._lastScreenX * 0.3,
+            end: 0,
+            ref: prev,
+            duration: 0.05,
+        })
+        animate({
+            begin: this._lastScreenX,
+            end: this.SCREEN_WIDTH,
+            ref: last,
+            done: _ => {
+                this.fromGesture = true
+                this.context.history.goBack()
+            },
+            duration: 0.05,
         })
     }
 
@@ -302,29 +290,11 @@ class AnimateRoute extends React.Component {
         if (!this.gestureBackActive) {
             return
         }
+
         let deltaT = +new Date() - this.startTime
         //速度快而且滑动了一段距离
         if (deltaT < 300 && this._lastScreenX > this.SCREEN_WIDTH * 0.2) {
-            this.animate({
-                begin: this.BOTTOM_SCREEN_OFFSET + this._lastScreenX * 0.3,
-                end: 0,
-                ref: this.preRef,
-                duration: 0.05,
-            })
-            this.animate({
-                begin: this._lastScreenX,
-                end: this.SCREEN_WIDTH,
-                ref: this.matchRef,
-                done: _ => {
-                    this.matchPage.props.setCache(false)
-                    this.fromGesture = true
-                    this.props.adapt.history.goBack()
-                },
-                duration: 0.05,
-            })
-            this._lastScreenX = 0
-            this.isRerender = true
-            this.gestureBackActive = false
+            this.goPrevPage()
         }
         //滑动小于一半
         else if (this._lastScreenX < this.SCREEN_WIDTH / 2) {
@@ -332,80 +302,11 @@ class AnimateRoute extends React.Component {
             if (this._lastScreenX > 0) {
                 this.reset()
             }
-            this.gestureBackActive = false
-            this._lastScreenX = 0
         } else {
-            //将上一页划入
-            this.animate({
-                begin: this.BOTTOM_SCREEN_OFFSET + this._lastScreenX * 0.3,
-                end: 0,
-                ref: this.preRef,
-                duration: 0.05,
-            })
-            //将本页划出
-            this.animate({
-                begin: this._lastScreenX,
-                end: this.SCREEN_WIDTH,
-                ref: this.matchRef,
-                done: _ => {
-                    this.matchPage.props.setCache(false)
-                    this.fromGesture = true
-                    this.props.adapt.history.goBack()
-                },
-                duration: 0.05,
-            })
-            this.isRerender = true
-            this.gestureBackActive = false
-            this._lastScreenX = 0
+            this.goPrevPage()
         }
-    }
-
-    reRender = () => {
-
-        this.revertScrollTop()
-
-        this.matchPage.props.changeStatus('activate')
-
-        if (this.single) {
-            return <div ref={ref => this.preRef = this.matchRef = ref}>{this.matchPage}</div>
-        }
-
-        //找到本页面上一个页面的path
-        const prevLocation = window.globalManger[window.globalManger.length - 2]
-        //找到上一个对应的组件
-        this.prePage = this.findMatchElementByLocation(prevLocation)
-
-        return <>
-            <div style={{
-                ...this.SIZE,
-                opacity: 0,
-                position: 'fixed',
-                zIndex: -1,
-                transform: `translate3d(${this.BOTTOM_SCREEN_OFFSET}px,0,0)`,
-                top: -window.globalPosition[prevLocation.pathname] || 0,
-            }}
-                 key={Math.random()}
-                 ref={ref => {
-                     return this.preRef = ref
-                 }}>
-                {this.prePage}
-            </div>
-            <div style={{ ...this.SIZE, ...pop_match }}
-                 key={Math.random()}
-                 ref={ref => {
-                     if (ref) {
-                         ref.removeEventListener('touchstart', this.onTouchStart)
-                         ref.removeEventListener('touchmove', this.onTouchMove)
-                         ref.removeEventListener('touchend', this.onTouchEnd)
-                         ref.addEventListener('touchstart', this.onTouchStart)
-                         ref.addEventListener('touchmove', this.onTouchMove)
-                         ref.addEventListener('touchend', this.onTouchEnd)
-                     }
-                     this.matchRef = ref
-                 }}>
-                {this.matchPage}
-            </div>
-        </>
+        this.gestureBackActive = false
+        this._lastScreenX = 0
     }
 
     //个别安卓机不能回复滚动位置
@@ -418,155 +319,246 @@ class AnimateRoute extends React.Component {
         }
     }
 
-    renderPop = () => {
 
-        this.revertScrollTop()
-
-        if (!this.prePage) {
-            this.canAnimate = false
-            return this.matchPage
-        }
-
-
-        //回退碰到了相同页面
-        if (this.prePage.props.path == this.matchPage.props.path) {
-            //还能回退
-            if (window.globalManger.length > 1) {
-                this.canAnimate = false
-                this.props.adapt.history.goBack()
-            } else {
-                this.canAnimate = false
-                return this.matchPage
-            }
-        }
-
-
-        return (
-            <>
-                <div style={{
-                    ...this.SIZE,
-                    ...pop_match,
-                    zIndex: -1,
-                    // left: this.BOTTOM_SCREEN_OFFSET,
-                    transform: `transform3d(${this.BOTTOM_SCREEN_OFFSET}px,0,0)`,
-                }}
-                     key={Math.random().toString()}
-                     ref={ref => {
-                         if (ref) {
-                             ref.removeEventListener('touchstart', this.onTouchStart)
-                             ref.removeEventListener('touchmove', this.onTouchMove)
-                             ref.removeEventListener('touchend', this.onTouchEnd)
-                             ref.addEventListener('touchstart', this.onTouchStart)
-                             ref.addEventListener('touchmove', this.onTouchMove)
-                             ref.addEventListener('touchend', this.onTouchEnd)
-                         }
-                         this.matchRef = ref
-                     }}>
-                    {this.matchPage}
-                </div>
-                <div style={{
-                    ...this.SIZE,
-                    ...pop_pre,
-                    transform: `transform3d(${this.BOTTOM_SCREEN_OFFSET}px,0,0)`,
-                    top: -(document.documentElement.scrollTop || document.body.scrollTop),
-                }}
-                     key={Math.random().toString()}
-                     ref={ref => {
-                         this.preRef = ref
-                     }}>
-                    {this.prePage}
-                </div>
-            </>
-        )
+    recordPosition = () => {
+        window.globalPosition = window.globalPosition || []
+        window.globalPosition.push( document.documentElement.scrollTop || document.body.scrollTop)
     }
 
-    correctPosition = (key) => {
-        window.globalPosition = window.globalPosition || {}
-        window.globalPosition[key] = document.documentElement.scrollTop || document.body.scrollTop
-        document.documentElement.scrollTop = document.body.scrollTop = 0
-        return window.globalPosition[key]
-    }
-
-    renderPush = () => {
-        //入口重定向
-        if (this.single && this.action == 'REPLACE') {
-            this.canAnimate = false
-            return this.matchPage
-        }
-
-
-        const preLocation = window.globalManger[window.globalManger.length - 2]
-
-        this.correctPosition(preLocation.pathname)
-
-        if (this.prePage) {
-            this.prePage.props.changeStatus('unActivate')
-        }
-
-        this.matchPage.props.changeStatus('activate')
-
-
-        return (
-            <>
-                <div style={{
-                    transform: `translate3d(0px,0px,0)`,
-                    ...this.SIZE,
-                    position: 'fixed',
-                    left: 0,
-                    zIndex: -1,
-                    top: -window.globalPosition[preLocation.pathname] || 0,
-                }}
-                     key={Math.random()}
-                     ref={ref => {
-                         if (ref) {
-                             ref.style.opacity = null
-                         }
-                         return this.preRef = ref
-                     }}>
-                    {this.prePage}
-                </div>
-                <div style={{
-                    transform: `translate3d(${this.MATCH_SCREEN_OFFSET}px,0px,0)`,
-                    ...this.SIZE,
-                    ...push_match,
-                }}
-                     key={Math.random()}
-                     ref={ref => {
-                         if (ref) {
-                             ref.removeEventListener('touchstart', this.onTouchStart)
-                             ref.removeEventListener('touchmove', this.onTouchMove)
-                             ref.removeEventListener('touchend', this.onTouchEnd)
-                             ref.addEventListener('touchstart', this.onTouchStart)
-                             ref.addEventListener('touchmove', this.onTouchMove)
-                             ref.addEventListener('touchend', this.onTouchEnd)
-                         }
-                         this.matchRef = ref
-                     }}>
-                    {React.cloneElement(this.matchPage, { ...this.matchPage.props, routerActiveStatus: 'active' })}
-                </div>
-            </>
-        )
-    }
-
-    preRender = () => {
-        this.action = this.props.adapt.history.action
+    transitionPage = (currentContext, nextContext) => {
+        this.action = this.context.history.action
         this.single = window.globalManger.length == 1
         document.addEventListener('WinJSBridgeReady', _ => {
             window.WinJSBridge.call('webview', 'dragbackenable', { enable: this.single })
         })
-        // this.toggleBodyTouch(this.single)
-        this.prePage = this.matchPage
-        this.matchPage = this.findMatchElement()
+        if (this.action == 'PUSH') {
+            this.recordPosition()
+            this.renderPush(currentContext, nextContext)
+            document.documentElement.scrollTop = document.body.scrollTop = 0
+        }
+        if (this.action == 'POP') {
+            this.renderPop(currentContext, nextContext)
+        }
+        if (this.action == 'REPLACE') {
+            this.renderPush(currentContext, nextContext, true)
+        }
     }
 
+
+    addEvent = ref => {
+        if (ref) {
+            ref.addEventListener('touchstart', this.onTouchStart)
+            ref.addEventListener('touchmove', this.onTouchMove)
+            ref.addEventListener('touchend', this.onTouchEnd)
+        }
+    }
+
+    setPrePageWhenPush = (ref) => {
+        ref.style.cssText = `
+            width: 100vw;
+                    min-height:100vh;
+                    position: fixed;
+                    left: 0;
+                    z-index: -1;
+                    top: -${window.globalPosition[window.globalPosition.length - 1] || 0}px;
+        `
+    }
+
+    setNextPageWhenPush = (ref) => {
+        ref.style.cssText = `
+                            width: 100vw;
+                            min-height: 100vh;
+                            transform: translate3d(${this.SCREEN_WIDTH}px,0px,0);
+                            background: ${BACK_GROUND};
+                            box-shadow: ${BOX_SHADOW};
+                         `
+    }
+
+    dispatchUnactivate = (id) => {
+        window.dispatchEvent(new CustomEvent(id, { detail: UN_ACTIVATE }))
+    }
+
+    dispatchActivate = id => {
+        window.dispatchEvent(new CustomEvent(id, { detail: ACTIVATE }))
+    }
+
+    renderPush = (currentContext, nextContext, isReplace) => {
+        const newIdx = this.vdom.length
+        const lastIdx = newIdx - 1
+
+        const lastPageId = getId(currentContext.location.pathname)
+        const newPageId = getId(nextContext.location.pathname, true)
+
+        this.vdom.push(
+            <div key={newPageId}
+                 ref={ref => {
+                     this.addEvent(ref)
+                     if (ref) {
+                         this.refArr[newIdx] = ref
+                     }
+                 }}>
+                {this.findMatchElementByLocation(nextContext.location, newPageId)}
+            </div>,
+        )
+        //将新页面 渲染出来
+        this.canUpdate = true
+        this.setState({}, _ => {
+
+            const prev = this.refArr[lastIdx]
+
+            //从倒数第三页开始display设为none
+            if (lastIdx > 0) {
+                this.refArr[lastIdx - 1].style.display = 'none'
+            }
+
+            //将新一页页面渲染后改变css为动画做准备
+            this.setPrePageWhenPush(this.refArr[lastIdx])
+            this.setNextPageWhenPush(this.refArr[newIdx])
+
+            //触发上一页的Unactivate lifecycle
+            this.dispatchUnactivate(lastPageId)
+
+            this.animateForAction(_ => {
+                if (isReplace) {
+                    //将倒数第二页设为新页面
+                    this.refArr[newIdx].style.cssText = `
+                                width: 100vw
+                                 min-height: 100vh;
+                                 transform: null;
+                                 background: ${BACK_GROUND};
+                    `
+                    this.vdom[lastIdx] = this.vdom[this.vdom.length - 1]
+                    this.refArr[lastIdx] = this.refArr[newIdx]
+
+                    //删除最后一页
+                    this.vdom.pop()
+                    this.refArr.pop()
+
+                    //将被替换的页面滚动位置与id移除
+                    window.globalPosition.pop()
+                    deleteId(currentContext.location.pathname)
+
+                    this.canUpdate = true
+                    this.setState({}, _ => {
+                        //触发下一页的 Activate lifecycle
+                        this.dispatchActivate(newPageId)
+                        if (this.refArr[lastIdx - 1]) {
+                            this.refArr[lastIdx - 1].style.display = null
+                            this.refArr[lastIdx - 1].style.opacity = 0
+                        }
+                        this.canUpdate = false
+                    })
+                } else {
+                    //触发下一页的 Activate lifecycle
+                    this.dispatchActivate(newPageId)
+                    prev.style.opacity = 0
+                    this.refArr[newIdx].style.transform = null
+                    this.refArr[newIdx].style.boxShadow = null
+                }
+            })
+            this.canUpdate = false
+        })
+    }
+
+
+    setPrePageWhenPop = (ref) => {
+        ref.style.cssText = `
+                width: 100vw;
+                minHeight: 100vh;
+                background: ${BACK_GROUND};
+                z-index: -1;
+                opacity: null;
+                display: null;
+                transform: transform3d(${this.BOTTOM_SCREEN_OFFSET}px,0,0),
+        `
+    }
+
+    setNextPageWhenPop = ref => {
+        ref.style.cssText = `
+                width: ${window.innerWidth}px;
+                min-height: ${window.innerHeight}px;
+                box-shadow: ${BOX_SHADOW};
+                background: ${BACK_GROUND};
+                position:fixed;
+                z-index:1;
+                top:-${document.documentElement.scrollTop || document.body.scrollTop}px;
+                left:0;
+        `
+    }
+
+    renderPop = (currentContext, nextContext) => {
+        //回复上一页的滚动为值（异步）
+        this.revertScrollTop()
+
+        //如果只有一个页面，同时action为pop直接返回对应页面
+        if (this.vdom.length <= 1) {
+            clearId()
+            const id = getId(this.context.location.pathname, true)
+            this.vdom = [<div key={id}
+                              ref={ref => this.refArr[0] = ref}>{this.findMatchElementByLocation(this.context.location, id)}</div>]
+            this.canUpdate = true
+            this.setState({}, _ => {
+                this.canUpdate = false
+            })
+            return
+        }
+
+
+        const prevPageIdx = this.vdom.length - 2
+        const lastPageIdx = this.vdom.length - 1
+
+        this.setPrePageWhenPop(this.refArr[prevPageIdx])
+        this.setNextPageWhenPop(this.refArr[lastPageIdx])
+
+        const done = () => {
+            const lastPageId = getId(currentContext.location.pathname)
+            const nextPageId = getId(nextContext.location.pathname)
+            this.refArr.pop()
+            this.vdom.pop()
+            window.globalPosition.pop()
+            this.canUpdate = true
+
+            this.dispatchUnactivate(lastPageId)
+
+            deleteId(currentContext.location.pathname)
+
+            this.setState({}, _ => {
+                this.dispatchActivate(nextPageId)
+                this.canUpdate = false
+                this.refArr[prevPageIdx].style.boxShadow = BOX_SHADOW
+                this.refArr[prevPageIdx].style.zIndex = null
+                this.refArr[prevPageIdx].style.transform = null
+                //将底部下一页显示
+                if (this.refArr[prevPageIdx - 1]) {
+                    this.refArr[prevPageIdx - 1].style.display = null
+                }
+            })
+        }
+        //如果手势回退，不播动画
+        if (this.fromGesture) {
+            done()
+            this.fromGesture = false
+        } else {
+            this.animateForAction(_ => {
+                done()
+            })
+        }
+    }
+
+    animateForAction = (done) => {
+        this.action == 'POP' ? this.animatePop(done) : this.animatePush(done)
+    }
+
+
     render() {
-        this.preRender()
-        this.SIZE = { width: window.innerWidth, minHeight: window.innerHeight }
-        return this.matchPage ?
-            this.action == 'POP' ?
-                this.isRerender ? this.reRender() : this.renderPop()
-                : this.renderPush()
-            : '404'
+        return this.vdom || (
+            this.vdom = [
+                <div key={getId(this.context.location.pathname, true)}
+                     ref={ref => this.refArr[0] = ref}>
+                    {this.findMatchElementByLocation(this.context.location, getId(this.context.location.pathname))}
+                </div>,
+            ]
+        )
     }
 
 }

@@ -28,7 +28,7 @@ class Route extends React.Component {
               ? matchPath(location.pathname, this.props)
               : context.match;
 
-          const props = { ...context, location, match };
+          let props = { ...context, location, match };
 
           let { children, component, render } = this.props;
 
@@ -56,7 +56,6 @@ class Route extends React.Component {
               children = null;
             }
           }
-
           return (
             <RouterContext.Provider value={props}>
               {children && !isEmptyChildren(children)

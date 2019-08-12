@@ -32,5 +32,6 @@ export { default as generatePath } from "./generatePath";
 export { default as matchPath } from "./matchPath";
 export { default as withRouter } from "./withRouter";
 export { default as renderRoutes } from "./renderRoutes";
+export { detect ,useDetect} from './detect'
 
 export { default as __RouterContext } from "./RouterContext";
