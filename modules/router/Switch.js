@@ -348,7 +348,9 @@ class Switch extends React.Component {
             this.renderPop(currentContext, nextContext)
         }
         if (this.action == 'REPLACE') {
+            this.recordPosition()
             this.renderPush(currentContext, nextContext, true)
+            document.documentElement.scrollTop = document.body.scrollTop = 0
         }
     }
 
@@ -362,7 +364,6 @@ class Switch extends React.Component {
     }
 
     setPrePageWhenPush = (ref) => {
-        if (!window.globalPosition) return
         ref.style.cssText = `
             width: ${window.innerWidth}px;
             min-height: ${window.innerHeight}px;
@@ -466,6 +467,7 @@ class Switch extends React.Component {
                 }
             }
 
+            //有可能第一页会触发push（不播动画）
             if (lte10) {
                 done()
             } else {
