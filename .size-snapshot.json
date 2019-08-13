@@ -24,16 +24,16 @@
     "gzipped": 4731
   },
   "esm/freya-router-dom.js": {
-    "bundled": 84095,
-    "minified": 43691,
-    "gzipped": 10870,
+    "bundled": 83626,
+    "minified": 43227,
+    "gzipped": 10791,
     "treeshaked": {
       "rollup": {
-        "code": 19148,
+        "code": 18804,
         "import_statements": 447
       },
       "webpack": {
-        "code": 20710
+        "code": 20370
       }
     }
   }

@@ -20,6 +20,10 @@ function firstDivInBody() {
     }
 }
 
+const lte10 = navigator.userAgent.match(/Mac OS/)
+    && (navigator.userAgent.match(/os\s+(\d+)/i) ? navigator.userAgent.match(/os\s+(\d+)/i)[1] - 0 < 10 :
+        false)
+
 export const IdContext = React.createContext('')
 
 
@@ -73,7 +77,7 @@ class Switch extends React.Component {
     componentWillReceiveProps(nextProps, nextContext) {
         if (nextContext.location.pathname != this.context.location.pathname) {
             const currentContext = this.context
-            Promise.resolve().then(_ => this.transitionPage(currentContext, nextContext))
+            this.transitionPage(currentContext, nextContext)
         }
     }
 
@@ -323,16 +327,6 @@ class Switch extends React.Component {
         this._lastScreenX = 0
     }
 
-    //个别安卓机不能回复滚动位置
-    revertScrollTop = () => {
-        const currentLocation = window.globalManger[window.globalManger.length - 1]
-        if (currentLocation && currentLocation.pathname && window.globalPosition) {
-            Promise.resolve().then(_ => {
-                document.body.scrollTop = document.documentElement.scrollTop = window.globalPosition[currentLocation.pathname]
-            })
-        }
-    }
-
 
     recordPosition = () => {
         window.globalPosition = window.globalPosition || []
@@ -360,7 +354,7 @@ class Switch extends React.Component {
 
 
     addEvent = ref => {
-        if (ref) {
+        if (ref && !lte10) {
             ref.addEventListener('touchstart', this.onTouchStart)
             ref.addEventListener('touchmove', this.onTouchMove)
             ref.addEventListener('touchend', this.onTouchEnd)
@@ -370,22 +364,22 @@ class Switch extends React.Component {
     setPrePageWhenPush = (ref) => {
         ref.style.cssText = `
             width: ${window.innerWidth}px;
-                min-height: ${window.innerHeight}px;
-                    position: fixed;
-                    left: 0;
-                    z-index: -1;
-                    top: -${window.globalPosition[window.globalPosition.length - 1] || 0}px;
+            min-height: ${window.innerHeight}px;
+            position: fixed;
+            left: 0;
+            z-index: -1;
+            top: -${window.globalPosition[window.globalPosition.length - 1] || 0}px;
         `
     }
 
     setNextPageWhenPush = (ref) => {
         ref.style.cssText = `
-                            width: ${window.innerWidth}px;
-                min-height: ${window.innerHeight}px;
-                            transform: translate3d(${this.SCREEN_WIDTH}px,0px,0);
-                            background: ${BACK_GROUND};
-                            box-shadow: ${BOX_SHADOW};
-                         `
+                    width: ${window.innerWidth}px;
+                    min-height: ${window.innerHeight}px;
+                    transform: translate3d(${this.SCREEN_WIDTH}px,0px,0);
+                    background: ${BACK_GROUND};
+                    box-shadow: ${BOX_SHADOW};
+                  `
     }
 
     dispatchUnactivate = (id) => {
@@ -432,12 +426,12 @@ class Switch extends React.Component {
             //触发上一页的Unactivate lifecycle
             this.dispatchUnactivate(lastPageId)
 
-            this.animateForAction(_ => {
+            const done = () => {
                 if (isReplace) {
                     //将倒数第二页设为新页面
                     this.refArr[newIdx].style.cssText = `
-                                width: 100vw
-                                 min-height: 100vh;
+                                width: ${window.innerWidth}px;
+                                 min-height: ${window.innerHeight}px;
                                  transform: null;
                                  background: ${BACK_GROUND};
                     `
@@ -469,7 +463,13 @@ class Switch extends React.Component {
                     this.refArr[newIdx].style.transform = null
                     this.refArr[newIdx].style.boxShadow = null
                 }
-            })
+            }
+
+            if (lte10) {
+                done()
+            } else {
+                this.animateForAction(done)
+            }
             this.canUpdate = false
         })
     }
@@ -501,8 +501,6 @@ class Switch extends React.Component {
     }
 
     renderPop = (currentContext, nextContext) => {
-        //回复上一页的滚动为值（异步）
-        this.revertScrollTop()
 
         //如果只有一个页面，同时action为pop直接返回对应页面
         if (this.vdom.length <= 1) {
@@ -553,10 +551,10 @@ class Switch extends React.Component {
         if (this.fromGesture) {
             done()
             this.fromGesture = false
+        } else if (lte10) {
+            done()
         } else {
-            this.animateForAction(_ => {
-                done()
-            })
+            this.animateForAction(done)
         }
     }
 
