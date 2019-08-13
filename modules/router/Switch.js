@@ -77,7 +77,9 @@ class Switch extends React.Component {
     componentWillReceiveProps(nextProps, nextContext) {
         if (nextContext.location.pathname != this.context.location.pathname) {
             const currentContext = this.context
-            this.transitionPage(currentContext, nextContext)
+            Promise.resolve().then(_=>{
+                this.transitionPage(currentContext, nextContext)
+            })
         }
     }
 
