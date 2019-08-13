@@ -150,7 +150,7 @@ class Switch extends React.Component {
         // to trigger an unmount/remount for two <Route>s that render the same
         // component at different URLs.
         let element, match
-        location = location || this.props.location || this.props.adapt.location
+        location = location || this.props.location || this.context.location
         React.Children.forEach(this.props.children, child => {
             if (match == null && React.isValidElement(child)) {
                 element = child
@@ -335,7 +335,7 @@ class Switch extends React.Component {
 
     transitionPage = (currentContext, nextContext) => {
         this.action = this.context.history.action
-        this.single = window.globalManger.length == 1
+        this.single = !window.globalManger || window.globalManger.length == 1
         document.addEventListener('WinJSBridgeReady', _ => {
             window.WinJSBridge.call('webview', 'dragbackenable', { enable: this.single })
         })
