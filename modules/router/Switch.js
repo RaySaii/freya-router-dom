@@ -6,6 +6,7 @@ import RouterContext from './RouterContext'
 import matchPath from './matchPath'
 import {ACTIVATE, UN_ACTIVATE} from './detect'
 import {animate} from './animate'
+import {FREYA_IS_REDIRECT} from './Redirect'
 
 const BACK_GROUND = '#f5f5f9'
 const BOX_SHADOW = '-3px 0 8px rgba(0, 0, 0, .2)'
@@ -74,12 +75,13 @@ class Switch extends React.Component {
     refArr = []
 
 
+    init = true
+
+
     componentWillReceiveProps(nextProps, nextContext) {
         if (nextContext.location.pathname != this.context.location.pathname) {
             const currentContext = this.context
-            Promise.resolve().then(_=>{
-                this.transitionPage(currentContext, nextContext)
-            })
+            this.transitionPage(currentContext, nextContext)
         }
     }
 
@@ -88,18 +90,7 @@ class Switch extends React.Component {
     }
 
     componentDidMount() {
-        const id = getId(this.context.location.pathname, true)
-        this.vdom = [
-            <div key={id}
-                 ref={ref => this.refArr[0] = ref}>
-                {this.findMatchElementByLocation(this.context.location, id)}
-            </div>,
-        ]
-        this.canUpdate = true
-        this.setState({}, _ => {
-            this.dispatchActivate(id)
-            this.canUpdate = false
-        })
+        this.initPage(this.context)
     }
 
     //leftPage -> rightPage ->
@@ -395,6 +386,13 @@ class Switch extends React.Component {
     }
 
     renderPush = (currentContext, nextContext, isReplace) => {
+
+        if (window[FREYA_IS_REDIRECT]) {
+            this.initPage(nextContext)
+            window[FREYA_IS_REDIRECT] = false
+            return
+        }
+
         const newIdx = this.vdom.length
         const lastIdx = newIdx - 1
 
@@ -505,22 +503,25 @@ class Switch extends React.Component {
         `
     }
 
+    initPage = (nextContext) => {
+        clearId()
+        const id = getId(nextContext.location.pathname, true)
+        this.vdom = [<div key={id}
+                          ref={ref => this.refArr[0] = ref}>{this.findMatchElementByLocation(nextContext.location, id)}</div>]
+        this.canUpdate = true
+        this.setState({}, _ => {
+            this.canUpdate = false
+            this.dispatchActivate(id)
+        })
+    }
+
     renderPop = (currentContext, nextContext) => {
 
         //如果只有一个页面，同时action为pop直接返回对应页面
         if (this.vdom.length <= 1) {
-            clearId()
-            const id = getId(this.context.location.pathname, true)
-            this.vdom = [<div key={id}
-                              ref={ref => this.refArr[0] = ref}>{this.findMatchElementByLocation(this.context.location, id)}</div>]
-            this.canUpdate = true
-            this.setState({}, _ => {
-                this.canUpdate = false
-                this.dispatchActivate(id)
-            })
+            this.initPage(nextContext)
             return
         }
-
 
         const prevPageIdx = this.vdom.length - 2
         const lastPageIdx = this.vdom.length - 1
