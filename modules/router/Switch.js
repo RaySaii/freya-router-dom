@@ -362,6 +362,7 @@ class Switch extends React.Component {
     }
 
     setPrePageWhenPush = (ref) => {
+        if (!window.globalPosition) return
         ref.style.cssText = `
             width: ${window.innerWidth}px;
             min-height: ${window.innerHeight}px;
