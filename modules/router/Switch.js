@@ -74,10 +74,6 @@ class Switch extends React.Component {
 
     refArr = []
 
-
-    init = true
-
-
     componentWillReceiveProps(nextProps, nextContext) {
         if (nextContext.location.pathname != this.context.location.pathname) {
             const currentContext = this.context
@@ -328,7 +324,7 @@ class Switch extends React.Component {
 
     transitionPage = (currentContext, nextContext) => {
         this.action = this.context.history.action
-        this.single = !window.globalManger || window.globalManger.length == 1
+        this.single = window.globalManger.length == 1
         document.addEventListener('WinJSBridgeReady', _ => {
             window.WinJSBridge.call('webview', 'dragbackenable', { enable: this.single })
         })
@@ -349,6 +345,7 @@ class Switch extends React.Component {
 
 
     addEvent = ref => {
+        if (window.globalManger.length <= 1) return
         if (ref && !lte10) {
             ref.addEventListener('touchstart', this.onTouchStart)
             ref.addEventListener('touchmove', this.onTouchMove)
