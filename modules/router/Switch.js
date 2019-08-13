@@ -439,6 +439,7 @@ class Switch extends React.Component {
                     deleteId(currentContext.location.pathname)
 
                     this.canUpdate = true
+
                     this.setState({}, _ => {
                         //触发下一页的 Activate lifecycle
                         this.dispatchActivate(newPageId)
