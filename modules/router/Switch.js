@@ -387,12 +387,6 @@ class Switch extends React.Component {
 
     renderPush = (currentContext, nextContext, isReplace) => {
 
-        if (window[FREYA_IS_REDIRECT]) {
-            this.initPage(nextContext)
-            window[FREYA_IS_REDIRECT] = false
-            return
-        }
-
         const newIdx = this.vdom.length
         const lastIdx = newIdx - 1
 
@@ -424,7 +418,6 @@ class Switch extends React.Component {
             //将新一页页面渲染后改变css为动画做准备
             this.setPrePageWhenPush(this.refArr[lastIdx])
             this.setNextPageWhenPush(this.refArr[newIdx])
-
             //触发上一页的Unactivate lifecycle
             this.dispatchUnactivate(lastPageId)
 
@@ -468,8 +461,9 @@ class Switch extends React.Component {
             }
 
             //有可能第一页会触发push（不播动画）
-            if (lte10) {
+            if (lte10 || window[FREYA_IS_REDIRECT]) {
                 done()
+                window[FREYA_IS_REDIRECT] = false
             } else {
                 this.animateForAction(done)
             }
