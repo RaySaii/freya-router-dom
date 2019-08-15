@@ -7,6 +7,7 @@ import matchPath from './matchPath'
 import {ACTIVATE, UN_ACTIVATE} from './detect'
 import {animate} from './animate'
 import {FREYA_IS_REDIRECT} from './Redirect'
+import {FREYA_GLOBAL_MANGER} from '../history/createBrowserHistory'
 
 const BACK_GROUND = '#f5f5f9'
 const BOX_SHADOW = '-3px 0 8px rgba(0, 0, 0, .2)'
@@ -58,12 +59,11 @@ class Switch extends React.Component {
     //来自于手势的后退
     fromGesture = false
     action = ''
-    //只有一页
-    single = true
     SCREEN_WIDTH = window.innerWidth
     BOTTOM_SCREEN_OFFSET = -this.SCREEN_WIDTH * 0.3
     BACK_ACTIVE_POSITION = this.SCREEN_WIDTH * 0.1
     rootElement = firstDivInBody()
+    pagePosition=[]
     cacheList = {}
     //切换动画中
     animating = false
@@ -318,15 +318,13 @@ class Switch extends React.Component {
 
 
     recordPosition = () => {
-        window.globalPosition = window.globalPosition || []
-        window.globalPosition.push(document.documentElement.scrollTop || document.body.scrollTop)
+        this.pagePosition.push(document.documentElement.scrollTop || document.body.scrollTop)
     }
 
     transitionPage = (currentContext, nextContext) => {
         this.action = this.context.history.action
-        this.single = window.globalManger.length == 1
         document.addEventListener('WinJSBridgeReady', _ => {
-            window.WinJSBridge.call('webview', 'dragbackenable', { enable: this.single })
+            window.WinJSBridge.call('webview', 'dragbackenable', { enable: FREYA_GLOBAL_MANGER.length == 1 })
         })
         if (this.action == 'PUSH') {
             this.recordPosition()
@@ -345,7 +343,7 @@ class Switch extends React.Component {
 
 
     addEvent = ref => {
-        if (window.globalManger.length <= 1) return
+        if (FREYA_GLOBAL_MANGER.length <= 1) return
         if (ref && !lte10) {
             ref.addEventListener('touchstart', this.onTouchStart)
             ref.addEventListener('touchmove', this.onTouchMove)
@@ -360,7 +358,7 @@ class Switch extends React.Component {
             position: fixed;
             left: 0;
             z-index: -1;
-            top: -${window.globalPosition[window.globalPosition.length - 1] || 0}px;
+            top: -${this.pagePosition[this.pagePosition.length - 1] || 0}px;
         `
     }
 
@@ -435,7 +433,7 @@ class Switch extends React.Component {
                     this.refArr.pop()
 
                     //将被替换的页面滚动位置与id移除
-                    window.globalPosition.pop()
+                    this.pagePosition.pop()
                     deleteId(currentContext.location.pathname)
 
                     this.canUpdate = true
@@ -526,7 +524,7 @@ class Switch extends React.Component {
             const nextPageId = getId(nextContext.location.pathname)
             this.refArr.pop()
             this.vdom.pop()
-            window.globalPosition.pop()
+            this.pagePosition.pop()
             this.canUpdate = true
 
             this.dispatchUnactivate(lastPageId)
