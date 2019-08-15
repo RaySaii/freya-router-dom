@@ -93,7 +93,7 @@ function createBrowserHistory(props = {}) {
             FREYA_GLOBAL_MANGER.push(nextState.location)
         } else if (nextState.action == 'POP') {
             if (goNum) {
-                FREYA_GLOBAL_MANGER.length -= goNum
+                FREYA_GLOBAL_MANGER.length += goNum
                 goNum = null
             } else {
 
