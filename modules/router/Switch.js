@@ -353,8 +353,8 @@ class Switch extends React.Component {
 
     setPrePageWhenPush = (ref) => {
         ref.style.cssText = `
-            width: ${window.innerWidth}px;
-            min-height: ${window.innerHeight}px;
+            width: 100vw;
+            min-height: 100vh;
             position: fixed;
             left: 0;
             z-index: -1;
@@ -364,8 +364,8 @@ class Switch extends React.Component {
 
     setNextPageWhenPush = (ref) => {
         ref.style.cssText = `
-                    width: ${window.innerWidth}px;
-                    min-height: ${window.innerHeight}px;
+                    width: 100vw;
+                    min-height: 100vh;
                     transform: translate3d(${this.SCREEN_WIDTH}px,0px,0);
                     background: ${BACK_GROUND};
                     box-shadow: ${BOX_SHADOW};
@@ -420,8 +420,8 @@ class Switch extends React.Component {
                 if (isReplace) {
                     //将倒数第二页设为新页面
                     this.refArr[newIdx].style.cssText = `
-                                width: ${window.innerWidth}px;
-                                 min-height: ${window.innerHeight}px;
+                                width: 100vw;
+                                 min-height: 100vh;
                                  transform: null;
                                  background: ${BACK_GROUND};
                     `
@@ -470,8 +470,8 @@ class Switch extends React.Component {
 
     setPrePageWhenPop = (ref) => {
         ref.style.cssText = `
-                width: ${window.innerWidth}px;
-                min-height: ${window.innerHeight}px;
+                width: 100vw;
+                min-height: 100vh;
                 background: ${BACK_GROUND};
                 z-index: -1;
                 opacity: null;
@@ -482,8 +482,8 @@ class Switch extends React.Component {
 
     setNextPageWhenPop = ref => {
         ref.style.cssText = `
-                width: ${window.innerWidth}px;
-                min-height: ${window.innerHeight}px;
+                width: 100vw;
+                min-height: 100vh;
                 box-shadow: ${BOX_SHADOW};
                 background: ${BACK_GROUND};
                 position:fixed;
