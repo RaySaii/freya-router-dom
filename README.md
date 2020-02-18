@@ -2,7 +2,7 @@
 
 ### 预览
 
-![preview](/Users/Blackbird/Desktop/work/freya-router-dom/preview.GIF)
+![preview](./preview.GIF)
 
 ### 生命周期
 
